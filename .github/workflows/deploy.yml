@@ -7,15 +7,15 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_SPRING: ghcr.io/Goorm-MingleUp/backend-spring
+  IMAGE_SPRING: ghcr.io/goorm-mingleup/backend-spring
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write   # GHCR push 권한
-
+      packages: write  
+      
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,12 +26,17 @@ jobs:
           java-version: "21"
           distribution: "temurin"
 
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_TOKEN }}
+      # ---- GHCR 로그인 ----
+      - name: Log in to GHCR (auto fallback)
+        run: |
+          echo "🔐 Logging in to GHCR..."
+          if [ -n "${{ secrets.GHCR_TOKEN }}" ]; then
+            echo "✅ Using Personal Access Token (GHCR_TOKEN)"
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          else
+            echo "✅ Using default GITHUB_TOKEN"
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          fi
 
       # ---- SPRING IMAGE ----
       - name: Extract metadata (spring)
@@ -71,9 +76,44 @@ jobs:
           SHA_TAG=${GITHUB_SHA}
           ssh -o StrictHostKeyChecking=no -i /tmp/ec2_key ${EC2_USER}@${EC2_HOST} "
             set -e
-            cd /opt/app/infra   # EC2에서 docker-compose.yml 있는 경로로 변경하세요
+
+            REPO_DIR=/opt/backend
+            BRANCH=develop
+
+            # /opt 권한 확보
+            sudo mkdir -p /opt
+            sudo chown -R \$USER:\$USER /opt
+
+            # 저장소 clone 또는 pull
+            if [ ! -d \$REPO_DIR/.git ]; then
+              echo 'Repository not found. Cloning...'
+              git clone -b \$BRANCH https://github.com/Goorm-MingleUp/backend.git \$REPO_DIR
+            else
+              echo 'Repository exists. Pulling latest from develop...'
+              cd \$REPO_DIR
+              git fetch origin \$BRANCH
+              git checkout \$BRANCH
+              git reset --hard origin/\$BRANCH
+            fi
+
+            # infra 폴더로 이동
+            cd \$REPO_DIR/infra
+
+            # TAG 갱신
             sed -i 's/^TAG=.*/TAG='\"${SHA_TAG}\"'/' .env
 
-            sudo docker compose pull
-            sudo docker compose up -d
-          "
+            # GHCR private이면 로그인 (옵션)
+            # echo '${{ secrets.GHCR_TOKEN }}' | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # docker compose / docker-compose 감지
+            if docker compose version >/dev/null 2>&1; then
+              COMPOSE='docker compose'
+            else
+              COMPOSE='docker-compose'
+            fi
+
+            sudo \$COMPOSE pull
+            sudo \$COMPOSE up -d
+        
+
+
