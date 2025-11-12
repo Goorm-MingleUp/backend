@@ -34,7 +34,6 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
-	//	implementation 'org.springframework.boot:spring-boot-starter-security'
 	// 2. 카카오 로그인 및 JWT에 필수적인 의존성
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-webflux' // (KakaoApiClient용 WebClient)
@@ -46,6 +45,9 @@ dependencies {
 
 	// StringListConverter (JSON)용
 	implementation 'com.fasterxml.jackson.core:jackson-databind'
+
+	// [추가] @ConfigurationProperties (KakaoProperties 등) 자동 완성을 위한 의존성
+	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 }
 
 tasks.named('test') {
