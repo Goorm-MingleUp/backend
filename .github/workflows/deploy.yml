@@ -92,4 +92,4 @@ jobs:
             sudo docker-compose -f ./infra/docker-compose.yml down
             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/spring-service:latest
             sudo docker image prune -f
-            sudo docker-compose ./infra/docker-compose.yml up -d
+            sudo docker-compose -f ./infra/docker-compose.yml up -d
