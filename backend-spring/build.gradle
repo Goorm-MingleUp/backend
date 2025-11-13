@@ -46,6 +46,7 @@ dependencies {
 	// StringListConverter (JSON)용
 	implementation 'com.fasterxml.jackson.core:jackson-databind'
 
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.0'
 	// [추가] @ConfigurationProperties (KakaoProperties 등) 자동 완성을 위한 의존성
 	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 }

@@ -1,76 +1,122 @@
 package com.mingleup.backend.global.auth;
 
 import com.mingleup.backend.domian.user.domain.Role;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.io.Decoders;
+import com.mingleup.backend.global.exception.CustomException;
+import com.mingleup.backend.global.exception.ErrorCode;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Value;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
+import java.util.Base64;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 
-/**
- * MingleUp 자체 JWT를 생성하고 검증하는 유틸리티
- */
+@Slf4j
 @Component
 public class JwtTokenProvider {
 
-    private final SecretKey key;
-    private final long expirationInMs;
+    // [수정] final 필드로 변경
+    private final SecretKey secretKey;
+    private final long tokenValidityInMilliseconds;
 
-    public JwtTokenProvider(
-            @Value("${app.jwtSecret}") String secretKey,
-            @Value("${app.jwtExpirationInMs}") long expirationInMs
-    ) {
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
-        this.key = Keys.hmacShaKeyFor(keyBytes);
-        this.expirationInMs = expirationInMs;
+    // [수정] 생성자에서 JwtProperties를 주입받아 필드 초기화
+    public JwtTokenProvider(JwtProperties jwtProperties) {
+        byte[] keyBytes = Base64.getDecoder().decode(jwtProperties.getSecret());
+        this.secretKey = Keys.hmacShaKeyFor(keyBytes);
+        this.tokenValidityInMilliseconds = jwtProperties.getExpirationInMs();
     }
 
     /**
-     * @param userId MingleUp 유저 ID
-     * @param role MingleUp 유저 Role
-     * @return 생성된 JWT 문자열
+     * MingleUp 자체 JWT 토큰 생성
      */
     public String createToken(Long userId, Role role) {
-        Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + expirationInMs);
-
         Claims claims = Jwts.claims().setSubject(userId.toString());
-        // claims.put("kakaoId", user.getKakaoId()); // kakaoId는 JWT에 필수가 아니므로 일단 제외
         claims.put("role", role.name());
+
+        Date now = new Date();
+        // [수정] final 필드 사용
+        Date validity = new Date(now.getTime() + tokenValidityInMilliseconds);
 
         return Jwts.builder()
                 .setClaims(claims)
                 .setIssuedAt(now)
-                .setExpiration(expiryDate)
-                .signWith(key, SignatureAlgorithm.HS512)
+                .setExpiration(validity)
+                .signWith(secretKey, SignatureAlgorithm.HS512) // [수정] final 필드 사용
                 .compact();
     }
 
-    // --- JWT 검증 로직 (추후 JwtAuthenticationFilter에서 사용) ---
-    // (지금 당장은 로그인 구현에 필요하지 않아 생략)
-    /*
-    public boolean validateToken(String token) {
-        try {
-            Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
-            return true;
-        } catch (Exception e) {
-            // log.error("JWT validation error: {}", e.getMessage());
+    /**
+     * Request Header에서 토큰 값을 가져옵니다. "Authorization" : "Bearer {TOKEN}"
+     */
+    public String resolveToken(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7);
         }
-        return false;
+        return null;
     }
 
-    public String getUserIdFromToken(String token) {
-        Claims claims = Jwts.parserBuilder()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
-        return claims.getSubject();
+    /**
+     * 토큰의 유효성 + 만료일자 확인
+     */
+    public boolean validateToken(String token) {
+        try {
+            // [수정] final 필드 사용
+            Jwts.parserBuilder().setSigningKey(secretKey).build().parseClaimsJws(token);
+            return true;
+        } catch (io.jsonwebtoken.security.SecurityException | MalformedJwtException e) {
+            log.warn("잘못된 JWT 서명입니다.");
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
+        } catch (ExpiredJwtException e) {
+            log.warn("만료된 JWT 토큰입니다.");
+            throw new CustomException(ErrorCode.EXPIRED_TOKEN);
+        } catch (UnsupportedJwtException e) {
+            log.warn("지원되지 않는 JWT 토큰입니다.");
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
+        } catch (IllegalArgumentException e) {
+            log.warn("JWT 토큰이 잘못되었습니다.");
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
+        }
     }
-    */
+
+    /**
+     * 토큰에서 Claims 정보를 추출합니다.
+     */
+    private Claims getClaims(String token) {
+        try {
+            return Jwts.parserBuilder()
+                    .setSigningKey(secretKey) // [수정] final 필드 사용
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+        } catch (ExpiredJwtException e) {
+            throw new CustomException(ErrorCode.EXPIRED_TOKEN);
+        } catch (Exception e) {
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
+        }
+    }
+
+    /**
+     * 토큰에서 인증 정보(Authentication)를 생성합니다.
+     */
+    public Authentication getAuthentication(String token) {
+        Claims claims = getClaims(token);
+        String userId = claims.getSubject();
+        String role = claims.get("role", String.class);
+
+        if (userId == null) {
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
+        }
+
+        List<SimpleGrantedAuthority> authorities = Collections.singletonList(new SimpleGrantedAuthority(role));
+
+        return new UsernamePasswordAuthenticationToken(userId, "", authorities);
+    }
 }

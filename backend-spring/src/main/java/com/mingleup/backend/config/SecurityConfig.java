@@ -46,6 +46,13 @@ public class SecurityConfig {
                                 "/api/v1/auth/**" // 카카오 로그인 관련 경로는 모두 허용
                         ).permitAll()
 
+                        // ✅ Swagger 문서 및 공개 경로 허용
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/swagger-resources/**",
+                                "/v3/api-docs/**",
+                                "/webjars/**"
+                        ).permitAll()
                         // --- (예시) 호스트 권한이 필요한 경우 ---
                         // .requestMatchers("/api/v1/host/**").hasRole("HOST")
 
