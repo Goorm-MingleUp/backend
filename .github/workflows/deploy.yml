@@ -57,7 +57,7 @@ jobs:
           script_stop: true
           script: |
             # .env 파일 동적 생성
-            cat > .env << EOF
+            cat > ./infra/.env << EOF
             DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}
             MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}
             MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}
