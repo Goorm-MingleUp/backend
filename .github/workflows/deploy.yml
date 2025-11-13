@@ -57,7 +57,7 @@ jobs:
           script_stop: true
           script: |
             # .env 파일 동적 생성
-            cat > .env << EOF
+            cat > ./infra/.env << EOF
             DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}
             MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}
             MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}
@@ -89,7 +89,7 @@ jobs:
 
             EOF
 
-            sudo docker-compose down
+            sudo docker-compose -f ./infra/docker-compose.yml down
             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/spring-service:latest
             sudo docker image prune -f
-            sudo docker-compose up -d
+            sudo docker-compose -f ./infra/docker-compose.yml up -d
