@@ -89,7 +89,7 @@ jobs:
 
             EOF
 
-            sudo docker-compose -f /home/ec2-user/infra/docker-compose.yml down
+            sudo docker-compose -f ./infra/docker-compose.yml down
             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/spring-service:latest
             sudo docker image prune -f
-            sudo docker-compose /home/ec2-user/infra/docker-compose.yml up -d
+            sudo docker-compose ./infra/docker-compose.yml up -d
