@@ -20,7 +20,7 @@ services:
   spring-service:
     image: ${DOCKER_USERNAME}/spring-service:latest
     depends_on:
-      - mysql
+      - mingleup-db
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mingleup-db:3306/${MYSQL_DATABASE}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=utf8
       SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
