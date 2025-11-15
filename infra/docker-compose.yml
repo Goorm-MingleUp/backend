@@ -1,7 +1,6 @@
 services:
-  mysql:
-    image: mysql:8.4
-    container_name: mingleup-db
+  mingleup-db:
+    image: mysql:8.4.7
     command: --default-authentication-plugin=caching_sha2_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
@@ -10,32 +9,32 @@ services:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./mysql/init:/docker-entrypoint-initdb.d:ro
+      - ./mysql/conf.d:/etc/mysql/conf.d
+      - ./mysql/init:/docker-entrypoint-initdb.d
     networks:
       - mingleup-net
     restart: always
     expose:
       - "3306"
 
-  spring:
-    image: ghcr.io/Goorm-MingleUp/backend-spring:${TAG}
-    container_name: spring-api
+  spring-service:
+    image: ${DOCKER_USERNAME}/spring-service:latest
     depends_on:
-      - mysql
+      - mingleup-db
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=utf8
+      SPRING_DATASOURCE_URL: jdbc:mysql://mingleup-db:3306/${MYSQL_DATABASE}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=utf8
       SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      SPRING_PROFILES_ACTIVE: prod
     ports:
       - "8080:8080"
     networks:
       - mingleup-net
-    restart: always
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
 
 networks:
   mingleup-net: {}
 
-volumes:
-  mysql_data: {}
+

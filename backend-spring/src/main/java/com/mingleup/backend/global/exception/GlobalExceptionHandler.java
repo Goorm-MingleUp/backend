@@ -1,37 +1,32 @@
 package com.mingleup.backend.global.exception;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.util.Map;
-
+/**
+ * 전역 예외를 처리하는 핸들러
+ */
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    public ResponseEntity<Map<String, Object>> handlerCustomException(CustomException ex) {
-        ErrorCode errorCode = ex.getErrorCode();
-        return ResponseEntity
-                .status(errorCode.getHttpStatus())
-                .body(Map.of(
-                        "isSuccess", false,
-                        "code", errorCode.getCode(),
-                        "message", errorCode.getMessage(),
-                        "result", ""
-                ));
+    /**
+     * CustomException을 처리합니다.
+     */
+    @ExceptionHandler(CustomException.class)
+    protected ResponseEntity<ErrorResponse> handleCustomException(CustomException e) {
+        log.error("handleCustomException: {}", e.getErrorCode().getMessage());
+        return ErrorResponse.toResponseEntity(e.getErrorCode());
     }
 
+    /**
+     * 처리하지 못한 나머지 예외를 처리합니다.
+     */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleGeneralException(Exception ex) {
-        ex.printStackTrace();
-        ErrorCode errorCode = ErrorCode.INTERNAL_SERVER_ERROR;
-        return ResponseEntity
-                .status(errorCode.getHttpStatus())
-                .body(Map.of(
-                        "isSuccess", false,
-                        "code", errorCode.getCode(),
-                        "message", errorCode.getMessage(),
-                        "result", ""
-                ));
+    protected ResponseEntity<ErrorResponse> handleException(Exception e) {
+        log.error("unhandledException: {}", e.getMessage(), e);
+        return ErrorResponse.toResponseEntity(ErrorCode.INTERNAL_SERVER_ERROR);
     }
 }

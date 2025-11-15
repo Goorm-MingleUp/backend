@@ -1,79 +1,95 @@
-name: Build images and deploy to EC2 (images only)
+name: Java CI with Gradle
 
 on:
   push:
-    branches: ["develop"]   
-  workflow_dispatch:
-
-env:
-  REGISTRY: ghcr.io
-  IMAGE_SPRING: ghcr.io/Goorm-MingleUp/backend-spring
+    branches: [ "develop" ]
+  pull_request:
+    branches: [ "develop" ]
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write   # GHCR push 권한
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 21 (for Spring build)
+      - uses: actions/checkout@v4
+      
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
-          java-version: "21"
-          distribution: "temurin"
+          java-version: '17'
+          distribution: 'temurin'
 
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_TOKEN }}
-
-      # ---- SPRING IMAGE ----
-      - name: Extract metadata (spring)
-        id: meta_spring
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.IMAGE_SPRING }}
-          tags: |
-            type=raw,value=latest
-            type=sha,format=long
-
-      - name: Set up Buildx
+      - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build & Push (spring)
-        uses: docker/build-push-action@v6
+      - name: Docker login
+        uses: docker/login-action@v3
         with:
-          context: ./backend-spring
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend-spring 
           file: ./backend-spring/Dockerfile
           push: true
-          tags: ${{ steps.meta_spring.outputs.tags }}
-          labels: ${{ steps.meta_spring.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          tags: ${{ secrets.DOCKER_USERNAME }}/spring-service:latest
+          platforms: linux/amd64,linux/arm64
 
-      # ---- DEPLOY to EC2 ----
-      - name: Prepare SSH key
-        run: |
-          echo "${{ secrets.EC2_SSH_KEY }}" > /tmp/ec2_key
-          chmod 600 /tmp/ec2_key
+      - name: Copy docker-compose to EC2
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ec2-user
+          key: ${{ secrets.PRIVATE_KEY }}
+          source: "./infra/docker-compose.yml"
+          target: "/home/ec2-user/"
+          
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ec2-user
+          key: ${{ secrets.PRIVATE_KEY }}
+          script_stop: true
+          script: |
+            # .env 파일 동적 생성
+            cat > ./infra/.env << EOF
+            DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}
+            MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}
+            MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}
+            MYSQL_USER=${{ secrets.MYSQL_USER }}
+            MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}
+            EOF
+            
+            cat > ./home/ec2-user/mysql/conf.d << EOF
 
-      - name: Update TAG and compose up on EC2
-        env:
-          EC2_HOST: ${{ secrets.EC2_HOST }}
-          EC2_USER: ${{ secrets.EC2_USER }}
-        run: |
-          SHA_TAG=${GITHUB_SHA}
-          ssh -o StrictHostKeyChecking=no -i /tmp/ec2_key ${EC2_USER}@${EC2_HOST} "
-            set -e
-            cd /opt/app/infra   # EC2에서 docker-compose.yml 있는 경로로 변경하세요
-            sed -i 's/^TAG=.*/TAG='\"${SHA_TAG}\"'/' .env
+            [mysqld]
 
-            sudo docker compose pull
-            sudo docker compose up -d
-          "
+            character-set-server = utf8mb4
+            collation-server = utf8mb4_0900_ai_ci
+            skip-character-set-client-handshake = ON
+
+            [client]
+            default-character-set = utf8mb4
+
+            [mysql]
+            default-character-set = utf8mb4
+
+            EOF
+
+            cat > /home/ec2-user/mysql/conf.d << EOF
+
+            ALTER DATABASE `${MYSQL_DATABASE}`
+              CHARACTER SET utf8mb4
+              COLLATE utf8mb4_0900_ai_ci;
+
+            EOF
+
+            sudo docker-compose -f ./infra/docker-compose.yml down
+            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/spring-service:latest
+            sudo docker image prune -f
+            sudo docker-compose -f ./infra/docker-compose.yml up -d
