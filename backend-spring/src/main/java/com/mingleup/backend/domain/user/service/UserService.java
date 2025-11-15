@@ -1,8 +1,8 @@
 package com.mingleup.backend.domain.user.service;
 
-import com.mingleup.backend.domian.user.domain.User;
-import com.mingleup.backend.domian.user.dto.MyInfoResponse;
-import com.mingleup.backend.domian.user.repository.UserRepository;
+import com.mingleup.backend.domain.user.domain.User;
+import com.mingleup.backend.domain.user.dto.MyInfoResponse;
+import com.mingleup.backend.domain.user.repository.UserRepository;
 import com.mingleup.backend.global.exception.CustomException;
 import com.mingleup.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;

@@ -1,7 +1,7 @@
-package com.mingleup.backend.domian.user.controller;
+package com.mingleup.backend.domain.user.controller;
 
 import com.mingleup.backend.domain.user.service.UserService;
-import com.mingleup.backend.domian.user.dto.MyInfoResponse;
+import com.mingleup.backend.domain.user.dto.MyInfoResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;

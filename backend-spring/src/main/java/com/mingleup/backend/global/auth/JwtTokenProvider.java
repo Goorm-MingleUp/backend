@@ -1,6 +1,6 @@
 package com.mingleup.backend.global.auth;
 
-import com.mingleup.backend.domian.user.domain.Role;
+import com.mingleup.backend.domain.user.domain.Role;
 import com.mingleup.backend.global.exception.CustomException;
 import com.mingleup.backend.global.exception.ErrorCode;
 import io.jsonwebtoken.*;

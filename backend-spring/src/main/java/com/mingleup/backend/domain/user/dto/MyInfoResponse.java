@@ -1,8 +1,8 @@
-package com.mingleup.backend.domian.user.dto;
+package com.mingleup.backend.domain.user.dto;
 
-import com.mingleup.backend.domian.user.domain.Gender;
-import com.mingleup.backend.domian.user.domain.Role;
-import com.mingleup.backend.domian.user.domain.User;
+import com.mingleup.backend.domain.user.domain.Gender;
+import com.mingleup.backend.domain.user.domain.Role;
+import com.mingleup.backend.domain.user.domain.User;
 import lombok.Builder;
 import lombok.Getter;
 

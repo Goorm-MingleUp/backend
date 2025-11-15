@@ -1,10 +1,10 @@
 package com.mingleup.backend.global.auth.service; // [수정] 올바른 패키지 경로
 
 // [수정] 모든 import 경로를 'backend' 기준으로 수정
-import com.mingleup.backend.domian.user.domain.Gender;
-import com.mingleup.backend.domian.user.domain.Role;
-import com.mingleup.backend.domian.user.domain.User;
-import com.mingleup.backend.domian.user.repository.UserRepository;
+import com.mingleup.backend.domain.user.domain.Gender;
+import com.mingleup.backend.domain.user.domain.Role;
+import com.mingleup.backend.domain.user.domain.User;
+import com.mingleup.backend.domain.user.repository.UserRepository;
 import com.mingleup.backend.global.auth.JwtTokenProvider;
 import com.mingleup.backend.global.auth.KakaoProperties;
 import com.mingleup.backend.global.auth.dto.KakaoTokenResponse;
