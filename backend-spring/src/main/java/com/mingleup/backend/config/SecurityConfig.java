@@ -1,5 +1,6 @@
 package com.mingleup.backend.config;
 
+import com.mingleup.backend.global.auth.JwtAuthenticationFilter; // [수정] import 추가
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -9,6 +10,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter; // [수정] import 추가
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -23,8 +25,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    // (추후) JWT 필터를 주입받는 곳
-    // private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    // [수정] JWT 필터를 주입받습니다.
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -43,7 +45,8 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/",
                                 "/error",
-                                "/api/v1/auth/**" // 카카오 로그인 관련 경로는 모두 허용
+                                "/api/v1/auth/**", // 카카오 로그인 관련 경로는 모두 허용
+                                "/api/v1/users/**" // 유저 관련 경로는 모두 허용
                         ).permitAll()
 
                         // ✅ Swagger 문서 및 공개 경로 허용
@@ -58,10 +61,10 @@ public class SecurityConfig {
 
                         // --- 나머지 경로는 모두 인증 필요 ---
                         .anyRequest().authenticated()
-                );
+                ) // [수정] 세미콜론(;)을 제거하여 체인을 계속 이어갑니다.
 
-        // 4. (추후) JWT 필터 추가
-        // .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                // 4. [수정] JWT 필터 추가 (UsernamePasswordAuthenticationFilter 전에 실행)
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         // 5. CORS 설정 (개발 편의를 위해 임시로 모두 허용)
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()));

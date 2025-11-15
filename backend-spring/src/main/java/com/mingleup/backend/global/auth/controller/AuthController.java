@@ -14,62 +14,76 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.net.URLEncoder; // [추가]
+import java.nio.charset.StandardCharsets; // [추가]
+import java.util.StringJoiner;
 
 @Slf4j
 @RestController
-@RequiredArgsConstructor
 @RequestMapping("/api/v1/auth")
+@RequiredArgsConstructor
 public class AuthController {
 
     private final KakaoProperties kakaoProperties;
     private final AuthService authService;
-    private final String clientRedirectUrl = "http://localhost:3000"; // 프론트엔드 주소 (임시)
 
     /**
-     * 클라이언트를 카카오 인가 코드 발급 페이지로 리디렉션
-     * [수정] scope 파라미터를 카카오 콘솔의 "필수 동의" 항목으로만 구성
+     * 카카오 로그인 페이지로 리디렉션
+     * @return
      */
     @GetMapping("/kakao/login")
     public ResponseEntity<Void> redirectToKakaoLogin() {
-        // [수정] "사용 안 함" 항목(profile_nickname, profile_image, account_email) 제거
-        // [추가] "필수 동의" 항목(name) 추가
-        List<String> scopes = List.of("name", "gender", "age_range", "birthday", "birthyear");
-        String scopeParam = scopes.stream().collect(Collectors.joining(","));
+        // 동의 항목 범위(scope) 설정
+        StringJoiner scopeJoiner = new StringJoiner(",");
+        scopeJoiner.add("profile_image"); // 프로필 사진 (선택 동의)
+        scopeJoiner.add("name"); // 이름 (필수 동의)
+        scopeJoiner.add("gender"); // 성별 (필수 동의)
+        scopeJoiner.add("birthday"); // 생일 (필수 동의)
+        scopeJoiner.add("birthyear"); // 출생 연도 (필수 동의)
+        // 참고: age_range는 birthday, birthyear가 있으면 자동 추론 가능하여 별도 요청 안함
 
         String authUrl = kakaoProperties.getAuthUri()
                 + "?client_id=" + kakaoProperties.getClientId()
                 + "&redirect_uri=" + kakaoProperties.getRedirectUri()
                 + "&response_type=code"
-                + "&scope=" + scopeParam;
+                + "&scope=" + scopeJoiner.toString();
 
         HttpHeaders headers = new HttpHeaders();
         headers.setLocation(URI.create(authUrl));
-        return new ResponseEntity<>(headers, HttpStatus.FOUND); // 302
+
+        // 302 Found 응답을 보내 브라우저를 리디렉션
+        return new ResponseEntity<>(headers, HttpStatus.FOUND);
     }
 
     /**
-     * 카카오 인가 코드를 받아 로그인 처리
+     * 카카오 로그인 콜백 처리
      * @param code 카카오가 발급한 인가 코드
-     * @return 성공 시 프론트 주소로 JWT 토큰과 함께 리디렉션, 실패 시 에러 페이지로 리디렉션
+     * @return
      */
     @GetMapping("/kakao/callback")
     public ResponseEntity<Void> handleKakaoCallback(@RequestParam("code") String code) {
-        HttpHeaders headers = new HttpHeaders();
+        log.info("카카오 인가 코드 수신: {}", code);
+        String frontendRedirectUrl = "http://localhost:3000/auth-redirect";
+        String errorUrl = "http://localhost:3000/login-error";
+
         try {
-            log.info("카카오 인가 코드 수신: {}", code);
+            // AuthService를 통해 카카오 로그인 처리 및 MingleUp JWT 발급
             LoginResponse loginResponse = authService.processKakaoLogin(code);
 
-            // 성공: JWT 토큰을 쿼리 파라미터로 프론트 리디렉션
-            String redirectUrl = clientRedirectUrl + "/auth-redirect?token=" + loginResponse.getJwtToken();
-            headers.setLocation(URI.create(redirectUrl));
-            return new ResponseEntity<>(headers, HttpStatus.FOUND);
+            // [수정] 성공 시 token, userId, name을 URL에 추가
+            String successUrl = frontendRedirectUrl
+                    + "?token=" + loginResponse.getJwtToken()
+                    + "&userId=" + loginResponse.getUserId()
+                    + "&name=" + URLEncoder.encode(loginResponse.getName(), StandardCharsets.UTF_8); // 이름 URL 인코딩
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setLocation(URI.create(successUrl));
+            return new ResponseEntity<>(headers, HttpStatus.FOUND); // 302
 
         } catch (Exception e) {
             log.error("카카오 로그인 처리 중 에러 발생", e);
-            // 실패: 프론트 에러 페이지로 리디렉션
-            String errorUrl = clientRedirectUrl + "/login-error"; // 프론트의 에러 페이지 (임시)
+            // 실패 시 에러 페이지로 리디렉션
+            HttpHeaders headers = new HttpHeaders();
             headers.setLocation(URI.create(errorUrl));
             return new ResponseEntity<>(headers, HttpStatus.FOUND);
         }

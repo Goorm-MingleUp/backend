@@ -12,16 +12,17 @@ import org.springframework.http.HttpStatus;
 public enum ErrorCode {
 
     // Common (공통)
-    INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "C001", "유효하지 않은 입력 값입니다."),
-    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "C002", "서버 내부 오류가 발생했습니다."),
+    INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "COMMON4001", "유효하지 않은 입력 값입니다."),
+    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "SERVER5001", "서버 내부 오류가 발생했습니다."),
 
     // Auth (인증)
-    INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "A001", "유효하지 않은 토큰입니다."),
-    EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "A002", "만료된 토큰입니다."),
-    AUTHENTICATION_FAILED(HttpStatus.UNAUTHORIZED, "A003", "인증에 실패했습니다."),
+    INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH4001", "인증에 실패했습니다."), // [수정]
+    EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH4002", "인증에 실패했습니다."), // [수정]
+    AUTHENTICATION_FAILED(HttpStatus.UNAUTHORIZED, "AUTH4003", "인증에 실패했습니다."), // [수정]
+    // (참고: message는 "인증에 실패했습니다."로 통일하고, result에 상세 내용을 담습니다)
 
     // User (사용자)
-    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "U001", "사용자를 찾을 수 없습니다.");
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER4004", "데이터를 찾을 수 없습니다."); // [수정]
 
     private final HttpStatus status;
     private final String code;
