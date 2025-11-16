@@ -2,12 +2,14 @@ package com.mingleup.backend.domain.user.controller;
 
 import com.mingleup.backend.domain.user.dto.UserInfoResponse;
 import com.mingleup.backend.domain.user.dto.UpdateUserInfoRequest;
+
 import com.mingleup.backend.domain.user.dto.UserProfileResponse; // [추가]
 import com.mingleup.backend.domain.user.dto.UserReviewResponse; // [추가]
 import com.mingleup.backend.domain.user.service.UserService;
 import com.mingleup.backend.global.common.ApiResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter; // [추가]
+
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -15,14 +17,18 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.data.domain.Page; // [추가]
 import org.springframework.data.domain.Pageable; // [추가]
 import org.springframework.data.web.PageableDefault; // [추가]
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+
 import java.util.List; // [추가]
+
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -43,6 +49,7 @@ public class UserController {
             항상 모든 정보가 반환됩니다. (참가자라도 평점 포함)
             
             (참고: `GET /api/v1/users/{userId}` API는 타인 조회용이며 접근 제어 로직이 다릅니다.)
+
             """,
             tags = {"User"}
     )
@@ -59,6 +66,7 @@ public class UserController {
                                 "code": "COMMON200",
                                 "message": "성공입니다.",
                                 "result": {
+
                                     "id": 1,
                                     "name": "김코딩",
                                     "email": "xorud315@naver.com",
@@ -87,6 +95,7 @@ public class UserController {
                                  "code": "AUTH4001",
                                  "message": "인증에 실패했습니다.",
                                  "result": "유효한 인증 정보가 없습니다."
+
                             }
                     """)
                     )
@@ -116,7 +125,7 @@ public class UserController {
     }
 
     /**
-     * 내 정보 수정 API (기존)
+     * 내 정보 수정 API
      * [PUT] /api/v1/users/me
      */
     @Operation(
