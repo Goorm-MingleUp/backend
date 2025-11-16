@@ -11,6 +11,8 @@ import com.mingleup.backend.domain.wishlist.repository.WishlistRepository;
 import com.mingleup.backend.global.exception.CustomException;
 import com.mingleup.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page; // [추가]
+import org.springframework.data.domain.Pageable; // [추가]
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page; // [추가]

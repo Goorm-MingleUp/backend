@@ -3,6 +3,8 @@ package com.mingleup.backend.domain.wishlist.repository;
 import com.mingleup.backend.domain.party.domain.Party;
 import com.mingleup.backend.domain.user.domain.User;
 import com.mingleup.backend.domain.wishlist.domain.Wishlist;
+import org.springframework.data.domain.Page; // [추가]
+import org.springframework.data.domain.Pageable; // [추가]
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 import org.springframework.data.domain.Page; // [추가]
