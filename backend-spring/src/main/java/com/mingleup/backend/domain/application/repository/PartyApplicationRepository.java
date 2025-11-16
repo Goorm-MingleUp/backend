@@ -5,6 +5,8 @@ import com.mingleup.backend.domain.user.domain.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface PartyApplicationRepository extends JpaRepository<PartyApplication, Long> {
 
@@ -15,4 +17,5 @@ public interface PartyApplicationRepository extends JpaRepository<PartyApplicati
      * @return 신청 내역 존재 시 true, 아니면 false
      */
     boolean existsByUserAndParty_Host(User user, User host);
+    List<PartyApplication> findByUser(User user);
 }
