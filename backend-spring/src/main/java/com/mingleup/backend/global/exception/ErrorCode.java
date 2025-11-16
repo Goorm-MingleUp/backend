@@ -19,6 +19,8 @@ public enum ErrorCode {
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH4001", "인증에 실패했습니다."), // [수정]
     EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH4002", "인증에 실패했습니다."), // [수정]
     AUTHENTICATION_FAILED(HttpStatus.UNAUTHORIZED, "AUTH4003", "인증에 실패했습니다."), // [수정]
+    FORBIDDEN(HttpStatus.FORBIDDEN, "AUTH4004", "인가에 실패했습니다."), // [추가]
+
     // (참고: message는 "인증에 실패했습니다."로 통일하고, result에 상세 내용을 담습니다)
 
     // User (사용자)

@@ -26,7 +26,7 @@ public class UserInfoResponse {
     private final String mbti;
     private final List<String> hobbies;
     private final List<String> idealTypeHobbies;
-    private final String hostNickname;
+    //private final String hostNickname;
 
     @Builder
     public UserInfoResponse(Long id, String name, String email, String profileImageUrl, Gender gender, LocalDate birthdate, Role role, String region, String mbti, List<String> hobbies, List<String> idealTypeHobbies, String hostNickname ) {
@@ -41,7 +41,7 @@ public class UserInfoResponse {
         this.mbti = mbti;
         this.hobbies = hobbies;
         this.idealTypeHobbies = idealTypeHobbies;
-        this.hostNickname = hostNickname;
+        //this.hostNickname = hostNickname;
     }
 
     /**
@@ -60,7 +60,7 @@ public class UserInfoResponse {
                 .mbti(user.getMbti())
                 .hobbies(user.getHobbies())
                 .idealTypeHobbies(user.getIdealTypeHobbies())
-                .hostNickname(user.getHostNickname())
+                //.hostNickname(user.getHostNickname())
                 .build();
     }
 }
