@@ -2,9 +2,12 @@ package com.mingleup.backend.domain.user.controller;
 
 import com.mingleup.backend.domain.user.dto.UserInfoResponse;
 import com.mingleup.backend.domain.user.dto.UpdateUserInfoRequest;
+import com.mingleup.backend.domain.user.dto.UserProfileResponse; // [추가]
+import com.mingleup.backend.domain.user.dto.UserReviewResponse; // [추가]
 import com.mingleup.backend.domain.user.service.UserService;
 import com.mingleup.backend.global.common.ApiResult;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter; // [추가]
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -16,6 +19,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List; // [추가]
+
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
@@ -25,14 +30,16 @@ public class UserController {
     private final UserService userService;
 
     /**
-     * 내 정보 조회 API
+     * 내 정보 조회 API (기존)
      * [GET] /api/v1/users/me
      */
     @Operation(
-            summary = "내 정보 조회",
+            summary = "내 정보 조회 (본인)",
             description = """
-            JWT 토큰 기반으로 현재 로그인한 사용자의 프로필 정보를 조회합니다.  
-            토큰 내 userId를 이용하여 `UserService`에서 내 정보(`UserInfoResponse`)를 반환합니다.
+            JWT 토큰 기반으로 현재 로그인한 사용자의 **본인** 프로필 정보를 조회합니다.
+            항상 모든 정보가 반환됩니다. (참가자라도 평점 포함)
+            
+            (참고: `GET /api/v1/users/{userId}` API는 타인 조회용이며 접근 제어 로직이 다릅니다.)
             """,
             tags = {"User"}
     )
@@ -49,16 +56,18 @@ public class UserController {
                                 "code": "COMMON200",
                                 "message": "성공입니다.",
                                 "result": {
-                                    "userId": 1,
-                                    "email": "xorud315@naver.com",
+                                    "id": 1,
                                     "name": "김코딩",
+                                    "email": "xorud315@naver.com",
+                                    "profileImageUrl": "https://example.com/images/profile.jpg",
                                     "gender": "MALE",
                                     "birthdate": "1995-10-21",
+                                    "role": "PARTICIPANT",
                                     "region": "서울",
                                     "mbti": "ISTJ",
                                     "hobbies": ["코딩", "등산", "맛집탐방"],
                                     "idealTypeHobbies": ["보드게임", "산책"],
-                                    "profileImageUrl": "https://example.com/images/profile.jpg"
+                                    "hostNickname": "코딩호스트"
                                 }
                             }
                     """)
@@ -71,10 +80,10 @@ public class UserController {
                             mediaType = "application/json",
                             examples = @ExampleObject(value = """
                             {
-                                "success": false,
-                                "code": "AUTH4001",
-                                "message": "인증에 실패했습니다.",
-                                "result": "유효한 인증 정보가 없습니다."
+                                 "success": false,
+                                 "code": "AUTH4001",
+                                 "message": "인증에 실패했습니다.",
+                                 "result": "유효한 인증 정보가 없습니다."
                             }
                     """)
                     )
@@ -104,13 +113,13 @@ public class UserController {
     }
 
     /**
-     * 내 정보 수정 API
+     * 내 정보 수정 API (기존)
      * [PUT] /api/v1/users/me
      */
     @Operation(
             summary = "내 정보 수정 (추가 정보 기입)",
             description = """
-            JWT 토큰 기반으로 현재 로그인한 사용자의 추가 정보를 수정(업데이트)합니다.  
+            JWT 토큰 기반으로 현재 로그인한 사용자의 추가 정보를 수정(업데이트)합니다.
             신규 가입자가 '회원 정보 기입' 폼을 제출할 때 사용됩니다.
             """,
             tags = {"User"}
@@ -125,19 +134,14 @@ public class UserController {
                             {
                                 "success": true,
                                 "code": "COMMON200",
-                                "message": "성공입니다."
+                                "message": "성공입니다.",
+                                "result": null
                             }
-                            """)
+                    """)
                     )
             ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "인증 실패 - JWT 토큰이 없거나 유효하지 않음"
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "토큰은 유효하나, 해당 사용자가 DB에 존재하지 않음"
-            )
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "404", description = "사용자 정보를 찾을 수 없습니다.")
     })
     @PutMapping("/me")
     public ResponseEntity<ApiResult<Void>> updateMyInfo(
@@ -147,6 +151,185 @@ public class UserController {
         Long userId = Long.parseLong(authentication.getName());
         userService.updateMyInfo(userId, request);
 
-        return ResponseEntity.ok(ApiResult.onSuccess());
+        return ResponseEntity.ok(ApiResult.onSuccess()); // result: null
+    }
+
+    /**
+     * 유저 프로필 조회 API
+     * [GET] /api/v1/users/{userId}
+     */
+    @Operation(
+            summary = "유저 프로필 조회",
+            description = """
+            `{userId}`에 해당하는 사용자의 프로필 정보를 조회합니다.
+            
+            - **호스트 프로필**: 누구나 조회 가능 (평점 포함)
+            - **참가자 프로필**:
+                - 본인 조회 시: 조회 가능 (단, `avgRating`은 `null`로 반환)
+                - 호스트가 신청자 조회 시: 조회 가능 (평점 포함)
+                - 그 외: 403 Forbidden
+            
+            (참고: 본인 정보의 모든 필드를 보려면 `GET /api/v1/users/me`를 사용하세요.)
+            """,
+            tags = {"User"}
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "프로필 조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = UserProfileResponse.class),
+                            examples = {
+                                    @ExampleObject(name = "호스트 조회 (평점 포함)", value = """
+                                    {
+                                      "success": true,
+                                      "code": "COMMON200",
+                                      "message": "성공입니다.",
+                                      "result": {
+                                        "userId": 1,
+                                        "name": "김태경",
+                                        "profileImageUrl": "http://k.kakaocdn.net/dn/6YvN9/dJMcabCzn9r/JoguXtLFRuaPjWSPRjuabK/img_640x640.jpg",
+                                        "avgRating": 0
+                                      }
+                                    }
+                                    """),
+                                    @ExampleObject(name = "참가자가 본인 조회 (평점 null)", value = """
+                                    {
+                                      "success": true,
+                                      "code": "COMMON200",
+                                      "message": "성공입니다.",
+                                      "result": {
+                                        "userId": 1,
+                                        "name": "김태경",
+                                        "profileImageUrl": "http://k.kakaocdn.net/dn/6YvN9/dJMcabCzn9r/JoguXtLFRuaPjWSPRjuabK/img_640x640.jpg",
+                                      }
+                                    }
+                                    """)
+                            }
+                    )
+            ),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "접근 권한 없음 (예: 참가자가 다른 참가자 조회)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                            {
+                                "success": false,
+                                "code": "AUTH4004",
+                                "message": "인가에 실패했습니다.",
+                                "result": "이 프로필을 조회할 권한이 없습니다."
+                            }
+                            """)
+                    )
+            ),
+            @ApiResponse(responseCode = "404", description = "사용자 정보를 찾을 수 없습니다."),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "접근 권한 없음 (예: 참가자가 다른 참가자 조회)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                            {
+                                "success": false,
+                                "code": "COMMON404",
+                                "message": "데이터를 찾을 수 없습니다.",
+                                "result": "해당 사용자를 찾을 수 없습니다."
+                            }
+                            """)
+                    )
+            ),
+    })
+    @GetMapping("/{userId}")
+    public ResponseEntity<ApiResult<UserProfileResponse>> getUserProfile(
+            @Parameter(description = "조회할 대상 사용자의 ID", required = true)
+            @PathVariable Long userId,
+            Authentication authentication
+    ) {
+        Long currentUserId = Long.parseLong(authentication.getName());
+        UserProfileResponse userProfile = userService.getUserProfile(userId, currentUserId);
+
+        return ResponseEntity.ok(ApiResult.onSuccess(userProfile));
+    }
+
+    /**
+     * (신규) 유저 후기 목록 조회 API
+     * [GET] /api/v1/users/{userId}/reviews
+     */
+    @Operation(
+            summary = "유저 후기 목록 조회",
+            description = """
+            `{userId}`에 해당하는 사용자가 받은 후기 목록을 조회합니다. (v2 접근 제어 로직 적용)
+            
+            - **호스트 후기**: 누구나 조회 가능
+            - **참가자 후기**:
+                - 본인 조회 시: 403 Forbidden (조회 불가)
+                - 호스트가 신청자 조회 시: 조회 가능
+                - 그 외: 403 Forbidden
+            """,
+            tags = {"User"}
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "후기 목록 조회 성공",
+                    content = @Content(mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                            {
+                                    "success": true,
+                                    "code": "COMMON200",
+                                    "message": "성공입니다.",
+                                    "result": [
+                                        {
+                                            "reviewId": 1,
+                                                "reviewerId": 2,
+                                                "reviewerName": "유저2",
+                                                "rating": 5,
+                                                "comment": "친절하고 분위기 좋았어요!",
+                                                "createdAt": "2025-11-17T01:54:04"
+                                        },
+                                        {
+                                            "reviewId": 2,
+                                                "reviewerId": 3,
+                                                "reviewerName": "유저3",
+                                                "rating": 4,
+                                                "comment": "보드게임 다양하고 재밌었습니다.",
+                                                "createdAt": "2025-11-17T01:54:04"
+                                        }
+                                    ]
+                            }
+                            """)
+                    )
+            ),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "접근 권한 없음 (예: 참가자가 본인 또는 다른 참가자 후기 조회)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                            {
+                                "success": false,
+                                "code": "AUTH4004",
+                                "message": "인가에 실패했습니다.",
+                                "result": "이 후기 목록을 조회할 권한이 없습니다."
+                            }
+                            """)
+                    )
+            ),
+            @ApiResponse(responseCode = "404", description = "사용자 정보를 찾을 수 없습니다.")
+    })
+    @GetMapping("/{userId}/reviews")
+    public ResponseEntity<ApiResult<List<UserReviewResponse>>> getUserReviews(
+            @Parameter(description = "후기 목록을 조회할 대상 사용자의 ID", required = true)
+            @PathVariable Long userId,
+            Authentication authentication
+    ) {
+        Long currentUserId = Long.parseLong(authentication.getName());
+        List<UserReviewResponse> reviews = userService.getUserReviews(userId, currentUserId);
+
+        return ResponseEntity.ok(ApiResult.onSuccess(reviews));
     }
 }

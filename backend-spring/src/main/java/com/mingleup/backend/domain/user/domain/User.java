@@ -1,5 +1,9 @@
 package com.mingleup.backend.domain.user.domain;
 
+import com.mingleup.backend.domain.application.domain.PartyApplication;
+import com.mingleup.backend.domain.party.domain.Party;
+import com.mingleup.backend.domain.review.domain.Review;
+import com.mingleup.backend.domain.wishlist.domain.Wishlist;
 import com.mingleup.backend.global.common.BaseTimeEntity;
 import com.mingleup.backend.global.common.StringListConverter;
 import jakarta.persistence.*;
@@ -73,30 +77,30 @@ public class User extends BaseTimeEntity {
     private String hostNickname;
 
     @Column(name = "host_avg_rating", precision = 2, scale = 1, columnDefinition = "DECIMAL(2,1) DEFAULT 0.0")
-    private BigDecimal hostAvgRating;
+    private BigDecimal avgRating;
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
     // --- 연관관계 (수정 없음) ---
-//    @OneToMany(mappedBy = "host", cascade = CascadeType.ALL, orphanRemoval = true)
-//    private List<Party> hostedParties = new ArrayList<>();
-//
-//    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-//    private List<PartyApplication> applications = new ArrayList<>();
-//
-//    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-//    private List<Wishlist> wishlists = new ArrayList<>();
-//
-//    @OneToMany(mappedBy = "reviewer", cascade = CascadeType.PERSIST)
-//    private List<Review> writtenReviews = new ArrayList<>();
-//
-//    @OneToMany(mappedBy = "reviewee", cascade = CascadeType.PERSIST)
-//    private List<Review> receivedReviews = new ArrayList<>();
+    @OneToMany(mappedBy = "host", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Party> hostedParties = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PartyApplication> applications = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Wishlist> wishlists = new ArrayList<>();
+
+    @OneToMany(mappedBy = "reviewer", cascade = CascadeType.PERSIST)
+    private List<Review> writtenReviews = new ArrayList<>();
+
+    @OneToMany(mappedBy = "reviewee", cascade = CascadeType.PERSIST)
+    private List<Review> receivedReviews = new ArrayList<>();
 
 
     @Builder
-    public User(String kakaoId, String email, String name, Gender gender, LocalDate birthdate, String region, String mbti, List<String> hobbies, List<String> idealTypeHobbies, String profileImageUrl, Role role, String hostIntro, BigDecimal hostAvgRating) {
+    public User(String kakaoId, String email, String name, Gender gender, LocalDate birthdate, String region, String mbti, List<String> hobbies, List<String> idealTypeHobbies, String profileImageUrl, Role role, String hostIntro, BigDecimal avgRating) {
         this.kakaoId = kakaoId;
         this.email = email;
         this.name = name;
@@ -109,7 +113,8 @@ public class User extends BaseTimeEntity {
         this.profileImageUrl = profileImageUrl;
         this.role = (role != null) ? role : Role.PARTICIPANT;
         this.hostIntro = hostIntro;
-        this.hostAvgRating = (hostAvgRating != null) ? hostAvgRating : BigDecimal.ZERO;
+        this.avgRating = (avgRating != null) ? avgRating : BigDecimal.ZERO;
+        this.hostNickname = hostNickname;
     }
 
     // == 비즈니스 로직 == //
@@ -124,11 +129,16 @@ public class User extends BaseTimeEntity {
         this.idealTypeHobbies = (idealTypeHobbies != null) ? idealTypeHobbies : new ArrayList<>();
     }
 
-    public void updateHostProfile(String hostIntro) {
+    public void updateHostProfile(String hostIntro, String hostNickname) {
         this.hostIntro = hostIntro;
+        this.hostNickname = hostNickname;
     }
 
     public void updateRole(Role role) {
         this.role = role;
+    }
+
+    public void updateAvgRating(BigDecimal newRating) {
+        this.avgRating = newRating;
     }
 }
