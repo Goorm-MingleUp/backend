@@ -56,12 +56,8 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/webjars/**"
                         ).permitAll()
-                        // --- (예시) 호스트 권한이 필요한 경우 ---
-                        // .requestMatchers("/api/v1/host/**").hasRole("HOST")
-
-                        // --- 나머지 경로는 모두 인증 필요 ---
                         .anyRequest().authenticated()
-                ) // [수정] 세미콜론(;)을 제거하여 체인을 계속 이어갑니다.
+                )
 
                 // 4. [수정] JWT 필터 추가 (UsernamePasswordAuthenticationFilter 전에 실행)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

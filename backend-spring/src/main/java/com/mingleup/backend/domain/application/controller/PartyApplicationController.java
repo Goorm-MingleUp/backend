@@ -1,22 +1,28 @@
-package com.mingleup.backend.domain.application.controller;
+package com.mingleup.backend.domain.application.controller; // [추가] 패키지 선언
 
-import com.mingleup.backend.domain.application.dto.MyApplicationResponse;
-import com.mingleup.backend.domain.application.service.PartyApplicationService;
-import com.mingleup.backend.global.common.ApiResult;
-import io.swagger.v3.oas.annotations.Operation;
+import com.mingleup.backend.domain.application.dto.MyApplicationResponse; // [추가]
+import com.mingleup.backend.domain.application.service.PartyApplicationService; // [추가]
+import com.mingleup.backend.global.common.ApiResult; // [추가]
+import io.swagger.v3.oas.annotations.Operation; // [추가]
+import io.swagger.v3.oas.annotations.Parameter; // [수정] import 추가
 import io.swagger.v3.oas.annotations.media.Content; // [추가]
 import io.swagger.v3.oas.annotations.media.ExampleObject; // [추가]
 import io.swagger.v3.oas.annotations.media.Schema; // [추가]
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.responses.ApiResponse; // [추가]
+import io.swagger.v3.oas.annotations.responses.ApiResponses; // [추가]
+import io.swagger.v3.oas.annotations.security.SecurityRequirement; // [추가]
+import io.swagger.v3.oas.annotations.tags.Tag; // [추가]
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page; // [추가]
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable; // [추가]
+import org.springframework.data.web.PageableDefault; // [추가]
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.Authentication; // [추가]
+import org.springframework.web.bind.annotation.GetMapping; // [추가]
+import org.springframework.web.bind.annotation.RequestMapping; // [추가]
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController; // [추가]
 
 import java.util.List;
 
@@ -47,33 +53,60 @@ public class PartyApplicationController {
                             mediaType = "application/json",
                             schema = @Schema(implementation = MyApplicationResponse.class),
                             examples = @ExampleObject(value = """
-                            {
-                                "success": true,
-                                "code": "COMMON200",
-                                "message": "성공입니다.",
-                                "result": [
                                     {
-                                        "applicationId": 1,
-                                        "applicationStatus": "PENDING",
-                                        "appliedAt": "2025-11-17T10:30:00",
-                                        "partyId": 4,
-                                        "partyTitle": "호스트1(보드킹)의 전략 게임 모임",
-                                        "partyImageUrl": "https://example.com/img/party4.jpg",
-                                        "partyDatetime": "2025-12-01T18:00:00",
-                                        "partyLocationName": "강남 보드게임카페"
-                                    },
-                                    {
-                                        "applicationId": 2,
-                                        "applicationStatus": "APPROVED",
-                                        "appliedAt": "2025-11-16T14:20:00",
-                                        "partyId": 5,
-                                        "partyTitle": "호스트2(스포츠짱)의 주말 풋살 모임",
-                                        "partyImageUrl": "https://example.com/img/party5.jpg",
-                                        "partyDatetime": "2025-12-05T10:00:00",
-                                        "partyLocationName": "잠실 풋살장"
+                                      "success": true,
+                                      "code": "COMMON200",
+                                      "message": "성공입니다.",
+                                      "result": {
+                                        "content": [
+                                          {
+                                            "applicationId": 11,
+                                            "applicationStatus": "PENDING",
+                                            "appliedAt": "2025-11-17T03:22:22",
+                                            "partyId": 4,
+                                            "partyTitle": "호스트1(보드킹)의 전략 게임 모임",
+                                            "partyImageUrl": "https://example.com/img/party4.jpg",
+                                            "partyDatetime": "2025-12-01T18:00:00",
+                                            "partyLocationName": "강남 보드게임카페"
+                                          },
+                                          {
+                                            "applicationId": 12,
+                                            "applicationStatus": "APPROVED",
+                                            "appliedAt": "2025-11-17T03:22:22",
+                                            "partyId": 5,
+                                            "partyTitle": "호스트2(스포츠짱)의 주말 풋살 모임",
+                                            "partyImageUrl": "https://example.com/img/party5.jpg",
+                                            "partyDatetime": "2025-12-05T10:00:00",
+                                            "partyLocationName": "잠실 풋살장"
+                                          }
+                                        ],
+                                        "pageable": {
+                                          "pageNumber": 0,
+                                          "pageSize": 10,
+                                          "sort": {
+                                            "sorted": false,
+                                            "unsorted": true,
+                                            "empty": true
+                                          },
+                                          "offset": 0,
+                                          "paged": true,
+                                          "unpaged": false
+                                        },
+                                        "last": true,
+                                        "totalPages": 1,
+                                        "totalElements": 2,
+                                        "first": true,
+                                        "numberOfElements": 2,
+                                        "size": 10,
+                                        "number": 0,
+                                        "sort": {
+                                          "sorted": false,
+                                          "unsorted": true,
+                                          "empty": true
+                                        },
+                                        "empty": false
+                                      }
                                     }
-                                ]
-                            }
                             """)
                     )
             ),
@@ -108,14 +141,27 @@ public class PartyApplicationController {
                             """)
                     )
             )
-            // --- [수정] 끝 ---
     })
     @GetMapping("/me")
-    public ResponseEntity<ApiResult<List<MyApplicationResponse>>> getMyApplications(
-            Authentication authentication
+    public ResponseEntity<ApiResult<Page<MyApplicationResponse>>> getMyApplications(
+         Authentication authentication,
+         @Parameter(description = "페이지 번호 (0부터 시작)", example = "0")
+         @RequestParam(defaultValue = "0") int page,
+
+         @Parameter(description = "페이지 크기", example = "10")
+         @RequestParam(defaultValue = "10") int size,
+
+         @Parameter(description = "정렬 기준 (예: appliedAt,desc)", example = "appliedAt,desc")
+         @RequestParam(required = false) String sort
     ) {
+
+        Pageable pageable = PageRequest.of(page, size);
+
         Long currentUserId = Long.parseLong(authentication.getName());
-        List<MyApplicationResponse> myApplications = partyApplicationService.getMyApplications(currentUserId);
+
+        Page<MyApplicationResponse> myApplications =
+                partyApplicationService.getMyApplications(currentUserId, pageable);
+
         return ResponseEntity.ok(ApiResult.onSuccess(myApplications));
     }
 

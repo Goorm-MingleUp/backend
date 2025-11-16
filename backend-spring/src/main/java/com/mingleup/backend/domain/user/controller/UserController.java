@@ -15,6 +15,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page; // [추가]
+import org.springframework.data.domain.Pageable; // [추가]
+import org.springframework.data.web.PageableDefault; // [추가]
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -154,12 +157,13 @@ public class UserController {
         return ResponseEntity.ok(ApiResult.onSuccess()); // result: null
     }
 
+    // --- [API 4] ---
     /**
-     * 유저 프로필 조회 API
+     * (신규) 타인 프로필 조회 API
      * [GET] /api/v1/users/{userId}
      */
     @Operation(
-            summary = "유저 프로필 조회",
+            summary = "유저 프로필 조회", // [수정]
             description = """
             `{userId}`에 해당하는 사용자의 프로필 정보를 조회합니다.
             
@@ -170,7 +174,7 @@ public class UserController {
                 - 그 외: 403 Forbidden
             
             (참고: 본인 정보의 모든 필드를 보려면 `GET /api/v1/users/me`를 사용하세요.)
-            """,
+            """, // [수정]
             tags = {"User"}
     )
     @ApiResponses({
@@ -193,7 +197,7 @@ public class UserController {
                                         "avgRating": 0
                                       }
                                     }
-                                    """),
+                                    """), // [수정]
                                     @ExampleObject(name = "참가자가 본인 조회 (평점 null)", value = """
                                     {
                                       "success": true,
@@ -202,10 +206,10 @@ public class UserController {
                                       "result": {
                                         "userId": 1,
                                         "name": "김태경",
-                                        "profileImageUrl": "http://k.kakaocdn.net/dn/6YvN9/dJMcabCzn9r/JoguXtLFRuaPjWSPRjuabK/img_640x640.jpg",
+                                        "profileImageUrl": "http://k.kakaocdn.net/dn/6YvN9/dJMcabCzn9r/JoguXtLFRuaPjWSPRjuabK/img_640x640.jpg"
                                       }
                                     }
-                                    """)
+                                    """) // [수정]
                             }
                     )
             ),
@@ -225,22 +229,7 @@ public class UserController {
                             """)
                     )
             ),
-            @ApiResponse(responseCode = "404", description = "사용자 정보를 찾을 수 없습니다."),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "접근 권한 없음 (예: 참가자가 다른 참가자 조회)",
-                    content = @Content(
-                            mediaType = "application/json",
-                            examples = @ExampleObject(value = """
-                            {
-                                "success": false,
-                                "code": "COMMON404",
-                                "message": "데이터를 찾을 수 없습니다.",
-                                "result": "해당 사용자를 찾을 수 없습니다."
-                            }
-                            """)
-                    )
-            ),
+            @ApiResponse(responseCode = "404", description = "사용자 정보를 찾을 수 없습니다.")
     })
     @GetMapping("/{userId}")
     public ResponseEntity<ApiResult<UserProfileResponse>> getUserProfile(
@@ -254,12 +243,13 @@ public class UserController {
         return ResponseEntity.ok(ApiResult.onSuccess(userProfile));
     }
 
+    // --- [API 5] ---
     /**
-     * (신규) 유저 후기 목록 조회 API
+     * (신규) 타인 후기 목록 조회 API
      * [GET] /api/v1/users/{userId}/reviews
      */
     @Operation(
-            summary = "유저 후기 목록 조회",
+            summary = "유저 후기 목록 조회", // [수정]
             description = """
             `{userId}`에 해당하는 사용자가 받은 후기 목록을 조회합니다. (v2 접근 제어 로직 적용)
             
@@ -268,7 +258,10 @@ public class UserController {
                 - 본인 조회 시: 403 Forbidden (조회 불가)
                 - 호스트가 신청자 조회 시: 조회 가능
                 - 그 외: 403 Forbidden
-            """,
+                
+            **페이징 지원:** `page` (페이지 번호, 0부터 시작), `size` (페이지 크기) 쿼리 파라미터를 사용할 수 있습니다.
+            (예: `/api/v1/users/1/reviews?page=0&size=5`)
+            """, // [수정]
             tags = {"User"}
     )
     @ApiResponses({
@@ -278,31 +271,38 @@ public class UserController {
                     content = @Content(mediaType = "application/json",
                             examples = @ExampleObject(value = """
                             {
-                                    "success": true,
-                                    "code": "COMMON200",
-                                    "message": "성공입니다.",
-                                    "result": [
+                                "success": true,
+                                "code": "COMMON200",
+                                "message": "성공입니다.",
+                                "result": {
+                                    "content": [
                                         {
                                             "reviewId": 1,
-                                                "reviewerId": 2,
-                                                "reviewerName": "유저2",
-                                                "rating": 5,
-                                                "comment": "친절하고 분위기 좋았어요!",
-                                                "createdAt": "2025-11-17T01:54:04"
+                                            "reviewerId": 2,
+                                            "reviewerName": "유저2",
+                                            "rating": 5,
+                                            "comment": "친절하고 분위기 좋았어요!",
+                                            "createdAt": "2025-11-17T01:54:04"
                                         },
                                         {
                                             "reviewId": 2,
-                                                "reviewerId": 3,
-                                                "reviewerName": "유저3",
-                                                "rating": 4,
-                                                "comment": "보드게임 다양하고 재밌었습니다.",
-                                                "createdAt": "2025-11-17T01:54:04"
+                                            "reviewerId": 3,
+                                            "reviewerName": "유저3",
+                                            "rating": 4,
+                                            "comment": "보드게임 다양하고 재밌었습니다.",
+                                            "createdAt": "2025-11-17T01:54:04"
                                         }
-                                    ]
+                                    ],
+                                    "pageable": { "pageNumber": 0, "pageSize": 10, ... },
+                                    "totalPages": 1,
+                                    "totalElements": 2,
+                                    "last": true,
+                                    ...
+                                }
                             }
-                            """)
-                    )
-            ),
+                        """) // [수정]
+                    ))
+            , // [수정] 중복된 괄호 ')' 삭제
             @ApiResponse(responseCode = "401", description = "인증 실패"),
             @ApiResponse(
                     responseCode = "403",
@@ -322,13 +322,16 @@ public class UserController {
             @ApiResponse(responseCode = "404", description = "사용자 정보를 찾을 수 없습니다.")
     })
     @GetMapping("/{userId}/reviews")
-    public ResponseEntity<ApiResult<List<UserReviewResponse>>> getUserReviews(
-            @Parameter(description = "후기 목록을 조회할 대상 사용자의 ID", required = true)
-            @PathVariable Long userId,
-            Authentication authentication
+    public ResponseEntity<ApiResult<Page<UserReviewResponse>>> getUserReviews( // [수정] List -> Page
+                                                                               @Parameter(description = "후기 목록을 조회할 대상 사용자의 ID", required = true)
+                                                                               @PathVariable Long userId,
+                                                                               Authentication authentication,
+                                                                               @Parameter(description = "페이징 설정 (page, size, sort)") // [추가]
+                                                                               @PageableDefault(size = 10, page = 0) Pageable pageable // [추가]
     ) {
         Long currentUserId = Long.parseLong(authentication.getName());
-        List<UserReviewResponse> reviews = userService.getUserReviews(userId, currentUserId);
+        // [수정] pageable 파라미터 전달
+        Page<UserReviewResponse> reviews = userService.getUserReviews(userId, currentUserId, pageable);
 
         return ResponseEntity.ok(ApiResult.onSuccess(reviews));
     }

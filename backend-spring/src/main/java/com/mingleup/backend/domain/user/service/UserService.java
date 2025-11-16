@@ -13,6 +13,8 @@ import com.mingleup.backend.domain.user.repository.UserRepository;
 import com.mingleup.backend.global.exception.CustomException;
 import com.mingleup.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page; // [추가]
+import org.springframework.data.domain.Pageable; // [추가]
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -112,9 +114,10 @@ public class UserService {
      * 유저 후기 목록 조회 (GET /{userId}/reviews)
      * @param targetUserId (조회 대상 ID)
      * @param currentUserId (조회 요청자 ID)
+     * @param pageable [수정] 페이징 파라미터 추가
      * @return
      */
-    public List<UserReviewResponse> getUserReviews(Long targetUserId, Long currentUserId) {
+    public Page<UserReviewResponse> getUserReviews(Long targetUserId, Long currentUserId, Pageable pageable) { // [수정]
         // 1. targetUser, currentUser 정보 조회
         User targetUser = findUserById(targetUserId);
         User currentUser = findUserById(currentUserId);
@@ -122,7 +125,7 @@ public class UserService {
         // 2. 규칙 A: 조회 대상이 '호스트'인 경우
         if (targetUser.getRole() == Role.HOST) {
             // 호스트 후기 목록은 공개
-            return fetchAndMapReviews(targetUser);
+            return fetchAndMapReviews(targetUser, pageable); // [수정]
         }
 
         // 3. 규칙 B: 조회 대상이 '참가자'인 경우
@@ -137,8 +140,8 @@ public class UserService {
             if (currentUser.getRole() == Role.HOST) {
                 boolean hasApplied = partyApplicationRepository.existsByUserAndParty_Host(targetUser, currentUser);
                 if (hasApplied) {
-                    // 호스트가 신청자 후기 조회 시 -> 허용
-                    return fetchAndMapReviews(targetUser);
+                    // 호스트가 신청자 조회 시 -> 허용
+                    return fetchAndMapReviews(targetUser, pageable); // [수정]
                 }
             }
 
@@ -163,13 +166,11 @@ public class UserService {
     /**
      * (Helper) 대상 유저(reviewee)가 받은 후기를 조회하여 DTO 리스트로 변환
      */
-    private List<UserReviewResponse> fetchAndMapReviews(User targetUser) {
-        List<Review> reviews = reviewRepository.findByReviewee(targetUser);
+    private Page<UserReviewResponse> fetchAndMapReviews(User targetUser, Pageable pageable) { // [수정]
+        Page<Review> reviews = reviewRepository.findByReviewee(targetUser, pageable); // [수정]
 
         // (참고) N+1 문제 최적화가 필요할 수 있음 (Review -> User (reviewer))
-        return reviews.stream()
-                .map(UserReviewResponse::from)
-                .collect(Collectors.toList());
+        return reviews.map(UserReviewResponse::from); // [수정]
     }
 
     // --- [추가된 로직] ---
@@ -185,8 +186,8 @@ public class UserService {
         User user = findUserById(userId);
 
         // 1. 해당 유저가 'reviewee'로서 받은 모든 후기를 조회합니다.
-        // (참고: 후기 타입(HOST, PARTICIPANT)에 따라 필터링이 필요할 수도 있습니다)
-        List<Review> reviews = reviewRepository.findByReviewee(user);
+        // [수정] findByReviewee(user, pageable)과의 메서드명 중복을 피하기 위해 findAllByReviewee 호출
+        List<Review> reviews = reviewRepository.findAllByReviewee(user);
 
         BigDecimal newRating;
 
@@ -207,12 +208,13 @@ public class UserService {
         // 4. User 엔티티에 업데이트
         // [중요] User.java 엔티티에 다음 메소드가 반드시 필요합니다:
         //
-        // public void updateHostAvgRating(BigDecimal newRating) {
+        // public void updateAvgRating(BigDecimal newRating) {
         //     this.hostAvgRating = newRating;
         // }
         //
-        // (이전 도메인 초안에 이 메소드가 없었으므로, User.java에 꼭 추가해주세요.)
-        user.updateAvgRating(newRating);
+        // (참고: UserProfileResponse 에서는 avgRating을 사용하므로
+        //  User 엔티티의 필드명(hostAvgRating)과 DTO 필드명(avgRating)이 다름에 유의)
+        user.updateAvgRating(newRating); // [수정] user.updateHostAvgRating -> user.updateAvgRating (제공된 코드 기준)
 
         // @Transactional(readOnly=false)이므로 Dirty Checking에 의해 자동 저장됩니다.
     }

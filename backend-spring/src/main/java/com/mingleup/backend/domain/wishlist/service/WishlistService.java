@@ -8,6 +8,8 @@ import com.mingleup.backend.domain.wishlist.repository.WishlistRepository;
 import com.mingleup.backend.global.exception.CustomException;
 import com.mingleup.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page; // [추가]
+import org.springframework.data.domain.Pageable; // [추가]
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,20 +27,18 @@ public class WishlistService {
     /**
      * 내 찜 목록 조회
      * @param currentUserId (현재 로그인한 사용자 ID)
+     * @param pageable (페이징 정보)
      * @return
      */
-    public List<MyWishlistResponse> getMyWishlistedParties(Long currentUserId) {
+    public Page<MyWishlistResponse> getMyWishlistedParties(Long currentUserId, Pageable pageable) { // [수정]
         // 1. 사용자 조회
         User user = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND, "사용자 정보를 찾을 수 없습니다."));
 
-        // 2. 해당 유저가 찜한 목록(Wishlist)을 조회
-        // (N+1 문제 발생 지점: Wishlist -> Party)
-        List<Wishlist> wishlists = wishlistRepository.findByUser(user);
+        // 2. 해당 유저가 찜한 목록(Wishlist)을 페이징으로 조회
+        Page<Wishlist> wishlistsPage = wishlistRepository.findByUser(user, pageable); // [수정]
 
         // 3. DTO로 변환하여 반환
-        return wishlists.stream()
-                .map(MyWishlistResponse::from)
-                .collect(Collectors.toList());
+        return wishlistsPage.map(MyWishlistResponse::from); // [수정]
     }
 }

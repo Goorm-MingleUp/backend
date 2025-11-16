@@ -4,21 +4,24 @@ import com.mingleup.backend.domain.wishlist.dto.MyWishlistResponse;
 import com.mingleup.backend.domain.wishlist.service.WishlistService;
 import com.mingleup.backend.global.common.ApiResult;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content; // [추가]
-import io.swagger.v3.oas.annotations.media.ExampleObject; // [추가]
-import io.swagger.v3.oas.annotations.media.Schema; // [추가]
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @Tag(name = "Wishlist", description = "찜하기 API")
 @RestController
@@ -35,11 +38,15 @@ public class WishlistController {
      */
     @Operation(
             summary = "내 찜한 파티 목록 조회",
-            description = "현재 로그인한 사용자가 찜(wishlist)한 모든 모임 목록을 조회합니다.",
+            description = """
+            현재 로그인한 사용자가 찜(wishlist)한 모든 모임 목록을 조회합니다.
+            
+            **페이징 지원:** `page` (페이지 번호, 0부터 시작), `size` (페이지 크기) 쿼리 파라미터를 사용할 수 있습니다.
+            (예: `/api/v1/wishlists/me?page=0&size=10`)
+            """,
             tags = {"Wishlist"}
     )
     @ApiResponses({
-            // --- [수정] 200, 401, 404 응답 예시 추가 ---
             @ApiResponse(
                     responseCode = "200",
                     description = "찜 목록 조회 성공",
@@ -51,18 +58,37 @@ public class WishlistController {
                                 "success": true,
                                 "code": "COMMON200",
                                 "message": "성공입니다.",
-                                "result": [
-                                    {
-                                        "wishlistId": 1,
-                                        "wishlistedAt": "2025-11-17T11:00:00",
-                                        "partyId": 6,
-                                        "partyTitle": "호스트3(요가언니)의 베이킹 클래스",
-                                        "partyImageUrl": "https://example.com/img/party6.jpg",
-                                        "partyDatetime": "2025-12-15T15:00:00",
-                                        "partyLocationName": "연남동 베이킹 스튜디오",
-                                        "entryFee": 30000
-                                    }
-                                ]
+                                "result": {
+                                    "content": [
+                                        {
+                                            "wishlistId": 1,
+                                            "wishlistedAt": "2025-11-17T11:00:00",
+                                            "partyId": 6,
+                                            "partyTitle": "호스트3(요가언니)의 베이킹 클래스",
+                                            "partyImageUrl": "https://example.com/img/party6.jpg",
+                                            "partyDatetime": "2025-12-15T15:00:00",
+                                            "partyLocationName": "연남동 베이킹 스튜디오",
+                                            "entryFee": 30000
+                                        }
+                                    ],
+                                    "pageable": {
+                                        "pageNumber": 0,
+                                        "pageSize": 3,
+                                        "sort": { "sorted": false, "unsorted": true, "empty": true },
+                                        "offset": 0,
+                                        "paged": true,
+                                        "unpaged": false
+                                    },
+                                    "totalPages": 1,
+                                    "totalElements": 1,
+                                    "last": true,
+                                    "size": 10,
+                                    "number": 0,
+                                    "sort": { "sorted": false, "unsorted": true, "empty": true },
+                                    "numberOfElements": 1,
+                                    "first": true,
+                                    "empty": false
+                                }
                             }
                             """)
                     )
@@ -97,14 +123,26 @@ public class WishlistController {
                             """)
                     )
             )
-            // --- [수정] 끝 ---
     })
     @GetMapping("/me")
-    public ResponseEntity<ApiResult<List<MyWishlistResponse>>> getMyWishlistedParties(
-            Authentication authentication
+    public ResponseEntity<ApiResult<Page<MyWishlistResponse>>> getMyWishlistedParties(
+           Authentication authentication,
+           @Parameter(description = "페이지 번호 (0부터 시작)", example = "0")
+               @RequestParam(defaultValue = "0") int page,
+
+           @Parameter(description = "페이지 크기", example = "10")
+               @RequestParam(defaultValue = "10") int size,
+
+           @Parameter(description = "정렬 기준 (예: wishlistedAt,desc)", example = "wishlistedAt,desc")
+               @RequestParam(required = false) String sort
     ) {
+
+        Pageable pageable = PageRequest.of(page, size);
+
         Long currentUserId = Long.parseLong(authentication.getName());
-        List<MyWishlistResponse> myWishlists = wishlistService.getMyWishlistedParties(currentUserId);
+        Page<MyWishlistResponse> myWishlists =
+                wishlistService.getMyWishlistedParties(currentUserId, pageable);
+
         return ResponseEntity.ok(ApiResult.onSuccess(myWishlists));
     }
 
