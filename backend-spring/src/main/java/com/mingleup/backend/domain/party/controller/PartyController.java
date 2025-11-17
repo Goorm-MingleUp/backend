@@ -61,13 +61,10 @@ public class PartyController {
     )
     @PostMapping
     public PartyCreateResponse create(
-            @RequestAttribute(value = "userId", required = false) Long id,
+            @RequestAttribute("userId") Long userId,
             @RequestBody PartyCreateRequest req
     ) {
-        if (id == null) {
-            id = 1L;
-        }
-        return partyService.createParty(id, req);
+        return partyService.createParty(userId, req);
     }
 
     @Operation(
@@ -77,30 +74,16 @@ public class PartyController {
                 - 해당 파티의 호스트만 수정 가능합니다.
                 """
     )
-//    @PutMapping("/{partyId}")
-//    public void update(
-//            @PathVariable Long partyId,
-//            //@RequestAttribute("userId") Long userId,
-//            @RequestParam("userId") Long userId,
-//            @RequestBody PartyUpdateRequest req
-//    ) {
-//        partyService.updateParty(partyId, userId, req);
-//    }
 
     @PutMapping("/{partyId}")
     public ResponseEntity<Void> update(
             @PathVariable Long partyId,
-            //@RequestAttribute("userId") Long userId,
-            @RequestParam(required = false) Long id,
+            @RequestAttribute("userId") Long userId,
             @RequestBody PartyUpdateRequest req
     ) {
-        if (id == null) {
-            id = 1L;
-        }
-        partyService.updateParty(partyId, id, req);
+        partyService.updateParty(partyId, userId, req);
         return ResponseEntity.noContent().build(); // 204
     }
-
 
     @Operation(
             summary = "파티 찜하기",
@@ -109,12 +92,9 @@ public class PartyController {
     @PostMapping("/{partyId}/wishlist")
     public WishlistResponse addWish(
             @PathVariable Long partyId,
-            @RequestAttribute(value = "userId", required = false) Long id
+            @RequestAttribute("userId") Long userId
     ) {
-        if (id == null) {
-            id = 1L;
-        }
-        return wishlistService.add(partyId, id); // 혹은 기존 코드
+        return wishlistService.add(partyId, userId);
     }
 
     @Operation(
@@ -124,13 +104,8 @@ public class PartyController {
     @DeleteMapping("/{partyId}/wishlist")
     public WishlistResponse removeWish(
             @PathVariable Long partyId,
-            @RequestAttribute(value = "userId", required = false) Long id
+            @RequestAttribute("userId") Long userId
     ) {
-        if (id == null) {
-            id = 1L;
-        }
-        return wishlistService.remove(partyId, id);
+        return wishlistService.remove(partyId, userId);
     }
-
-
 }
