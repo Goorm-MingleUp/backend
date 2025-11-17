@@ -11,7 +11,7 @@ spring:
     include: secret # Call with file : application-secret.yaml
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/mingleup-db?serverTimezone=Asia/Seoul&createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=UTF-8&useUnicode=true
+    url: jdjdbc:mysql://mingleup-db:3306/mingleup-db?serverTimezone=Asia/Seoul&createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=UTF-8&useUnicode=true
     username: root
   messages:
     encoding: UTF-8
