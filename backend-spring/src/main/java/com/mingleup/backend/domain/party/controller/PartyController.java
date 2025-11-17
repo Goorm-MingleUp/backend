@@ -85,27 +85,5 @@ public class PartyController {
         return ResponseEntity.noContent().build(); // 204
     }
 
-    @Operation(
-            summary = "파티 찜하기",
-            description = "해당 파티를 찜 목록에 추가합니다."
-    )
-    @PostMapping("/{partyId}/wishlist")
-    public WishlistResponse addWish(
-            @PathVariable Long partyId,
-            @RequestAttribute("userId") Long userId
-    ) {
-        return wishlistService.add(partyId, userId);
-    }
 
-    @Operation(
-            summary = "파티 찜 취소",
-            description = "해당 파티를 찜 목록에서 제거합니다."
-    )
-    @DeleteMapping("/{partyId}/wishlist")
-    public WishlistResponse removeWish(
-            @PathVariable Long partyId,
-            @RequestAttribute("userId") Long userId
-    ) {
-        return wishlistService.remove(partyId, userId);
-    }
 }

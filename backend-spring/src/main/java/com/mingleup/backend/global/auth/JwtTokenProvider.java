@@ -119,4 +119,18 @@ public class JwtTokenProvider {
 
         return new UsernamePasswordAuthenticationToken(userId, "", authorities);
     }
+
+    /**
+     * JWT에서 userId 추출   *** 동현 ***
+     */
+    public Long getUserId(String token){
+        try {
+            Claims claims = getClaims(token);
+            // subject 혹은 userId claim 둘 중 하나에서 가져올 수 있게 처리
+            Object id = claims.get("userId") != null ? claims.get("userId") : claims.getSubject();
+            return Long.valueOf(id.toString());
+        } catch (Exception e) {
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
+        }
+    }
 }

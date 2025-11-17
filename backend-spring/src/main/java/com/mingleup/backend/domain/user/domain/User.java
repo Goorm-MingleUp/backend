@@ -23,8 +23,8 @@ import java.util.List;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
-@Table(name = "user")
-@SQLDelete(sql = "UPDATE user SET deleted_at = CURRENT_TIMESTAMP WHERE user_id = ?")
+@Table(name = "`user`") // [수정] user가 예약어일 수 있으므로 backtick 추가
+@SQLDelete(sql = "UPDATE `user` SET deleted_at = CURRENT_TIMESTAMP WHERE user_id = ?")
 @Where(clause = "deleted_at IS NULL")
 public class User extends BaseTimeEntity {
 
@@ -59,6 +59,10 @@ public class User extends BaseTimeEntity {
     @Column(name = "hobbies")
     private List<String> hobbies = new ArrayList<>();
 
+    @Convert(converter = StringListConverter.class)
+    @Column(name = "ideal_type_hobbies")
+    private List<String> idealTypeHobbies = new ArrayList<>();
+
     @Column(name = "profile_image_url", length = 2048)
     private String profileImageUrl;
 
@@ -69,37 +73,34 @@ public class User extends BaseTimeEntity {
     @Column(name = "host_intro", length = 500)
     private String hostIntro;
 
+    @Column(name = "host_Nickname")
+    private String hostNickname;
+
     @Column(name = "host_avg_rating", precision = 2, scale = 1, columnDefinition = "DECIMAL(2,1) DEFAULT 0.0")
-    private BigDecimal hostAvgRating;
+    private BigDecimal avgRating;
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
-    // --- 연관관계 ---
-
-    // 1. 내가 호스팅하는 파티
+    // --- 연관관계 (수정 없음) ---
     @OneToMany(mappedBy = "host", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Party> hostedParties = new ArrayList<>();
 
-    // 2. 내가 신청한 내역
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PartyApplication> applications = new ArrayList<>();
 
-    // 3. 내가 찜한 내역
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Wishlist> wishlists = new ArrayList<>();
 
-    // 4. 내가 작성한 후기
     @OneToMany(mappedBy = "reviewer", cascade = CascadeType.PERSIST)
     private List<Review> writtenReviews = new ArrayList<>();
 
-    // 5. 내가 받은 후기
     @OneToMany(mappedBy = "reviewee", cascade = CascadeType.PERSIST)
     private List<Review> receivedReviews = new ArrayList<>();
 
 
     @Builder
-    public User(String kakaoId, String email, String name, Gender gender, LocalDate birthdate, String region, String mbti, List<String> hobbies, String profileImageUrl, Role role, String hostIntro, BigDecimal hostAvgRating) {
+    public User(String kakaoId, String email, String name, Gender gender, LocalDate birthdate, String region, String mbti, List<String> hobbies, List<String> idealTypeHobbies, String profileImageUrl, Role role, String hostIntro, BigDecimal avgRating) {
         this.kakaoId = kakaoId;
         this.email = email;
         this.name = name;
@@ -108,25 +109,36 @@ public class User extends BaseTimeEntity {
         this.region = region;
         this.mbti = mbti;
         this.hobbies = (hobbies != null) ? hobbies : new ArrayList<>();
+        this.idealTypeHobbies = (idealTypeHobbies != null) ? idealTypeHobbies : new ArrayList<>(); // [추가]
         this.profileImageUrl = profileImageUrl;
         this.role = (role != null) ? role : Role.PARTICIPANT;
         this.hostIntro = hostIntro;
-        this.hostAvgRating = (hostAvgRating != null) ? hostAvgRating : BigDecimal.ZERO;
+        this.avgRating = (avgRating != null) ? avgRating : BigDecimal.ZERO;
+        this.hostNickname = hostNickname;
     }
 
     // == 비즈니스 로직 == //
-    public void updateUser(String name, String region, String mbti, List<String> hobbies) {
-        this.name = name;
+
+    /**
+     * 회원 정보 기입 폼(추가 정보)을 기반으로 유저 정보를 업데이트합니다.
+     */
+    public void updateUser(String region, String mbti, List<String> hobbies, List<String> idealTypeHobbies) {
         this.region = region;
         this.mbti = mbti;
-        this.hobbies = hobbies;
+        this.hobbies = (hobbies != null) ? hobbies : new ArrayList<>();
+        this.idealTypeHobbies = (idealTypeHobbies != null) ? idealTypeHobbies : new ArrayList<>();
     }
 
-    public void updateHostProfile(String hostIntro) {
+    public void updateHostProfile(String hostIntro, String hostNickname) {
         this.hostIntro = hostIntro;
+        this.hostNickname = hostNickname;
     }
 
     public void updateRole(Role role) {
         this.role = role;
+    }
+
+    public void updateAvgRating(BigDecimal newRating) {
+        this.avgRating = newRating;
     }
 }
