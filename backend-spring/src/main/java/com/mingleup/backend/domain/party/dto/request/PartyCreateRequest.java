@@ -55,8 +55,8 @@ public record PartyCreateRequest(
         @Schema(example = "[\"N빵\"]")
         List<String> tags,
 
-        @Schema(example = "[\"파티 기대하는 점은?\", \"알러지 정보 있나요?\"]")
-        List<String> host_questions,
+        @Schema(example = "파티에 기대하는 점은?")
+        String host_questions,
 
         @Schema(example = "https://cdn.mingleup.party/party1.png")
         String party_image_url
@@ -80,6 +80,7 @@ public record PartyCreateRequest(
                         .recruitmentMethod(RecruitmentMethod.valueOf(recruitment_method.toUpperCase()))
                         .entryFee(entry_fee)
                         .tags(tags)
+                        .hostQuestion(host_questions)
                         .build();
         }
 }

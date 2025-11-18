@@ -7,7 +7,6 @@ import com.mingleup.backend.domain.party.dto.response.PartyCreateResponse;
 import com.mingleup.backend.domain.party.dto.response.PartyDetailResponse;
 import com.mingleup.backend.domain.party.dto.response.PartyListResponse;
 import com.mingleup.backend.domain.party.service.PartyService;
-import com.mingleup.backend.domain.wishlist.dto.response.WishlistResponse;
 import com.mingleup.backend.domain.wishlist.service.WishlistService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

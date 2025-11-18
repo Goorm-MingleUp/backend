@@ -39,6 +39,9 @@ public class PartyApplication {
     @Column(name = "status", nullable = false, length = 50)
     private ApplicationStatus status;
 
+    @Column(name = "answer_text", nullable = false, columnDefinition = "TEXT")
+    private String answerText;
+
     @CreatedDate
     @Column(name = "applied_at", nullable = false, updatable = false)
     private LocalDateTime appliedAt;
@@ -47,26 +50,16 @@ public class PartyApplication {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    // --- 연관관계 ---
-
-    // 1. 신청서의 답변
-    @OneToMany(mappedBy = "partyApplication", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ApplicationAnswer> answers = new ArrayList<>();
-
     @Builder
-    public PartyApplication(Party party, User user) {
+    public PartyApplication(Party party, User user, String answerText) {
         this.party = party;
         this.user = user;
         this.status = ApplicationStatus.PENDING; // 생성 시 기본 상태
+        this.answerText = answerText;
     }
 
     // == 비즈니스 로직 == //
     public void updateStatus(ApplicationStatus status) {
         this.status = status;
-    }
-
-    public void addAnswer(ApplicationAnswer answer) {
-        this.answers.add(answer);
-        answer.setPartyApplication(this);
     }
 }

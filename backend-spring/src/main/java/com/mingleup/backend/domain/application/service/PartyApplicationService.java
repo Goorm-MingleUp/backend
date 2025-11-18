@@ -1,19 +1,13 @@
 package com.mingleup.backend.domain.application.service;
 
-import com.mingleup.backend.domain.application.domain.ApplicationAnswer;
-import com.mingleup.backend.domain.application.domain.ApplicationStatus;
 import com.mingleup.backend.domain.application.domain.PartyApplication;
 import com.mingleup.backend.domain.application.dto.MyApplicationResponse;
 import com.mingleup.backend.domain.application.dto.PartyApplicationCancelResponse;
 import com.mingleup.backend.domain.application.dto.PartyApplicationRequest;
 import com.mingleup.backend.domain.application.dto.PartyApplicationResponse;
-import com.mingleup.backend.domain.application.repository.ApplicationAnswerRepository;
 import com.mingleup.backend.domain.application.repository.PartyApplicationRepository;
-import com.mingleup.backend.domain.party.domain.HostQuestion;
 import com.mingleup.backend.domain.party.domain.Party;
 import com.mingleup.backend.domain.party.domain.PartyStatus;
-import com.mingleup.backend.domain.party.domain.RecruitmentMethod;
-import com.mingleup.backend.domain.party.repository.HostQuestionRepository;
 import com.mingleup.backend.domain.party.repository.PartyRepository;
 import com.mingleup.backend.domain.user.domain.User;
 import com.mingleup.backend.domain.user.repository.UserRepository;
@@ -25,9 +19,6 @@ import org.springframework.data.domain.Pageable; // [추가]
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 @Service
 @RequiredArgsConstructor
 public class PartyApplicationService {
@@ -35,8 +26,6 @@ public class PartyApplicationService {
     private final PartyApplicationRepository partyApplicationRepository;
     private final UserRepository userRepository;
     private final PartyRepository partyRepository;
-    private final HostQuestionRepository hostQuestionRepository;
-    private final ApplicationAnswerRepository applicationAnswerRepository;
 
     /**
      * 내 파티 신청 목록 조회
@@ -60,52 +49,30 @@ public class PartyApplicationService {
     /**
      * 파티 신청
      */
-    public PartyApplicationResponse apply(Long partyId, Long userId, PartyApplicationRequest req) {
-        if (req == null || req.answer_text() == null || req.answer_text().isBlank()) {
-            throw new CustomException(ErrorCode.INVALID_REQUEST);
-        }
-
-        Party party = partyRepository.findById(partyId)
-                .orElseThrow(() -> new CustomException(ErrorCode.PARTY_NOT_FOUND));
+    public PartyApplicationResponse apply(Long userId, Long partyId, PartyApplicationRequest req) {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
+        Party party = partyRepository.findById(partyId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PARTY_NOT_FOUND));
+
+        // 중복 신청 체크
         if (partyApplicationRepository.existsByUserAndParty(user, party)) {
             throw new CustomException(ErrorCode.APPLICATION_ALREADY_EXISTS);
         }
 
-        HostQuestion question = hostQuestionRepository.findByParty(party)
-                .stream().findFirst()
-                .orElseThrow(() -> new CustomException(ErrorCode.HOST_QUESTION_NOT_FOUND));
+        PartyApplication application = PartyApplication.builder()
+                .party(party)
+                .user(user)
+                .answerText(req.answer()) // ✨ 단일 답변
+                .build();
 
-        ApplicationStatus status = (party.getRecruitmentMethod() == RecruitmentMethod.FCFS)
-                ? ApplicationStatus.APPROVED : ApplicationStatus.PENDING;
+        partyApplicationRepository.save(application);
 
-        PartyApplication application = partyApplicationRepository.save(
-                PartyApplication.builder()
-                        .party(party)
-                        .user(user)
-                        .build()
-        );
-        application.updateStatus(status);
-
-        applicationAnswerRepository.save(
-                ApplicationAnswer.builder()
-                        .partyApplication(application)
-                        .hostQuestion(question)
-                        .answerText(req.answer_text())
-                        .build()
-        );
-
-        return new PartyApplicationResponse(
-                application.getId(),
-                party.getId(),
-                user.getId(),
-                application.getStatus().name(),
-                req.answer_text()
-        );
+        return PartyApplicationResponse.from(application);
     }
+
 
     /**
      * 파티 신청 취소

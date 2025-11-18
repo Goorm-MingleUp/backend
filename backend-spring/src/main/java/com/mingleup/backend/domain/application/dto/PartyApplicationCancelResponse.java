@@ -1,7 +1,7 @@
 package com.mingleup.backend.domain.application.dto;
 
 public record PartyApplicationCancelResponse(
-        Long party_id,
-        Long user_id,
+        Long partyId,
+        Long userId,
         String status
 ) {}
