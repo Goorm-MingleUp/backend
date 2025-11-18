@@ -3,6 +3,7 @@ package com.mingleup.backend.domain.party.service;
 import com.mingleup.backend.domain.party.domain.*;
 import com.mingleup.backend.domain.party.dto.request.PartyCreateRequest;
 import com.mingleup.backend.domain.party.dto.request.PartyUpdateRequest;
+import com.mingleup.backend.domain.party.dto.response.HostQuestionResponse;
 import com.mingleup.backend.domain.party.dto.response.PartyCreateResponse;
 import com.mingleup.backend.domain.party.dto.response.PartyDetailResponse;
 import com.mingleup.backend.domain.party.dto.response.PartyListResponse;
@@ -56,8 +57,10 @@ public class PartyService {
         return PartyCreateResponse.from(party);
     }
 
-
-
+    /**
+     * 파티 상세 조회
+     */
+    @Transactional(readOnly = true)
     public PartyDetailResponse getParty(Long partyId) {
         Party party = partyRepository.findById(partyId)
                 .orElseThrow(() -> new CustomException(ErrorCode.PARTY_NOT_FOUND));
@@ -99,6 +102,7 @@ public class PartyService {
     /**
      * 파티 목록 조회
      */
+    @Transactional(readOnly = true)
     public PartyListResponse getParties(
             int page,
             int limit,
@@ -174,5 +178,20 @@ public class PartyService {
                     )
             );
         }
+    }
+    /**
+     * 호스트 질문 조회
+     */
+    @Transactional(readOnly = true)
+    public HostQuestionResponse getHostQuestion(Long partyId) {
+        Party party = partyRepository.findById(partyId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PARTY_NOT_FOUND));
+
+        HostQuestion question = hostQuestionRepository.findByParty(party)
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> new CustomException(ErrorCode.HOST_QUESTION_NOT_FOUND));
+
+        return new HostQuestionResponse(party.getId(), question.getQuestionText());
     }
 }

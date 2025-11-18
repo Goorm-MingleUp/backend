@@ -28,7 +28,15 @@ public enum ErrorCode {
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER4004", "데이터를 찾을 수 없습니다."), // [수정]
 
     // Party (파티)
-    PARTY_NOT_FOUND(HttpStatus.NOT_FOUND, "P404", "파티 정보를 찾을 수 없습니다.");
+    PARTY_NOT_FOUND(HttpStatus.NOT_FOUND, "PARTY404", "파티 정보를 찾을 수 없습니다."),
+    HOST_QUESTION_NOT_FOUND(HttpStatus.NOT_FOUND, "HOST4004", "호스트 질문을 찾을 수 없습니다."),
+
+    // Application
+    APPLICATION_ALREADY_EXISTS(HttpStatus.CONFLICT, "APPLICATION409", "이미 이 파티에 신청했습니다."),
+    APPLICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "APPLICATION404", "신청 내역을 찾을 수 없습니다."),
+    APPLICATION_CANNOT_CANCEL_CLOSED_PARTY(HttpStatus.BAD_REQUEST, "APPLICATION4002", "종료된 파티는 취소할 수 없습니다.");
+
+
 
     private final HttpStatus status;
     private final String code;
