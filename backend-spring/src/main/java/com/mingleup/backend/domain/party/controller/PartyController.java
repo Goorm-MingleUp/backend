@@ -2,11 +2,11 @@ package com.mingleup.backend.domain.party.controller;
 
 import com.mingleup.backend.domain.party.dto.request.PartyCreateRequest;
 import com.mingleup.backend.domain.party.dto.request.PartyUpdateRequest;
+import com.mingleup.backend.domain.party.dto.response.HostQuestionResponse;
 import com.mingleup.backend.domain.party.dto.response.PartyCreateResponse;
 import com.mingleup.backend.domain.party.dto.response.PartyDetailResponse;
 import com.mingleup.backend.domain.party.dto.response.PartyListResponse;
 import com.mingleup.backend.domain.party.service.PartyService;
-import com.mingleup.backend.domain.wishlist.dto.response.WishlistResponse;
 import com.mingleup.backend.domain.wishlist.service.WishlistService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -85,5 +85,13 @@ public class PartyController {
         return ResponseEntity.noContent().build(); // 204
     }
 
+    @Operation(
+            summary = "호스트 질문 조회",
+            description = "특정 파티의 호스트 질문을 조회합니다."
+    )
 
+    @GetMapping("/{partyId}/question")
+    public HostQuestionResponse getHostQuestion(@PathVariable Long partyId) {
+        return partyService.getHostQuestion(partyId);
+    }
 }

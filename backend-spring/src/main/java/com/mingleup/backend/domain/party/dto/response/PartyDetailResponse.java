@@ -1,16 +1,12 @@
 package com.mingleup.backend.domain.party.dto.response;
 
-import com.mingleup.backend.domain.party.domain.HostQuestion;
 import com.mingleup.backend.domain.party.domain.Party;
-import com.mingleup.backend.domain.party.domain.PartyStatus;
-import com.mingleup.backend.domain.party.domain.RecruitmentMethod;
 import com.mingleup.backend.domain.user.domain.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Schema(description = "파티 상세 응답 DTO")
 @Builder
@@ -71,7 +67,7 @@ public record PartyDetailResponse(
         HostInfo host,
 
         @Schema(description = "호스트 질문 목록", example = "[\"좋아하는 와인은?\", \"알러지 있나요?\"]")
-        List<String> hostQuestions
+        String hostQuestion
 ) {
 
         @Builder
@@ -107,17 +103,13 @@ public record PartyDetailResponse(
                         .entryFee(party.getEntryFee())
                         .tags(party.getTags())
                         .status(party.getStatus().name().toLowerCase())
+                        .hostQuestion(party.getHostQuestion())
                         .host(new HostInfo(
                                 host.getId(),
                                 host.getName(),
                                 host.getProfileImageUrl(),
                                 host.getHostIntro()
                         ))
-                        .hostQuestions(
-                                party.getHostQuestions().stream()
-                                        .map(HostQuestion::getQuestionText)
-                                        .collect(Collectors.toList())
-                        )
                         .build();
         }
 }

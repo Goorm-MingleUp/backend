@@ -1,5 +1,6 @@
 package com.mingleup.backend.domain.party.dto.request;
 
+import com.mingleup.backend.domain.party.domain.Party;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -18,6 +19,6 @@ public record PartyUpdateRequest(
         String recruitment_method,
         Integer entry_fee,
         List<String> tags,
-        List<String> host_questions,
+        String host_question,
         String party_image_url
 ) {}

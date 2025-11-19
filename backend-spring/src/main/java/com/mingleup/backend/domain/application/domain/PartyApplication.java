@@ -19,7 +19,7 @@ import java.util.List;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(name = "party_application")
-@EntityListeners(AuditingEntityListener.class) // applied_at, updated_at 때문에 BaseTimeEntity 대신 직접 사용
+@EntityListeners(AuditingEntityListener.class)
 public class PartyApplication {
 
     @Id
@@ -39,6 +39,10 @@ public class PartyApplication {
     @Column(name = "status", nullable = false, length = 50)
     private ApplicationStatus status;
 
+    // [추가] 답변 텍스트 필드
+    @Column(name = "answer_text", columnDefinition = "TEXT")
+    private String answerText;
+
     @CreatedDate
     @Column(name = "applied_at", nullable = false, updatable = false)
     private LocalDateTime appliedAt;
@@ -47,26 +51,16 @@ public class PartyApplication {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    // --- 연관관계 ---
-
-    // 1. 신청서의 답변
-    @OneToMany(mappedBy = "partyApplication", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ApplicationAnswer> answers = new ArrayList<>();
-
     @Builder
-    public PartyApplication(Party party, User user) {
+    public PartyApplication(Party party, User user, String answerText) {
         this.party = party;
         this.user = user;
-        this.status = ApplicationStatus.PENDING; // 생성 시 기본 상태
+        this.status = ApplicationStatus.PENDING; // 기본 상태
+        this.answerText = answerText;
     }
 
     // == 비즈니스 로직 == //
     public void updateStatus(ApplicationStatus status) {
         this.status = status;
-    }
-
-    public void addAnswer(ApplicationAnswer answer) {
-        this.answers.add(answer);
-        answer.setPartyApplication(this);
     }
 }
