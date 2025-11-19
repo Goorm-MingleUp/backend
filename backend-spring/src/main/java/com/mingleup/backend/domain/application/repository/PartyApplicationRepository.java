@@ -34,4 +34,6 @@ public interface PartyApplicationRepository extends JpaRepository<PartyApplicati
     boolean existsByUserAndParty(User user, Party party);
 
     Optional<PartyApplication> findByPartyAndUser(Party party, User user);
+
+    Optional<PartyApplication> findByUserAndParty(User user, Party party);
 }

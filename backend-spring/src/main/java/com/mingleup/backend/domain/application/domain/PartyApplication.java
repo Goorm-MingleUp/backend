@@ -19,7 +19,7 @@ import java.util.List;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(name = "party_application")
-@EntityListeners(AuditingEntityListener.class) // applied_at, updated_at 때문에 BaseTimeEntity 대신 직접 사용
+@EntityListeners(AuditingEntityListener.class)
 public class PartyApplication {
 
     @Id
@@ -39,7 +39,8 @@ public class PartyApplication {
     @Column(name = "status", nullable = false, length = 50)
     private ApplicationStatus status;
 
-    @Column(name = "answer_text", nullable = false, columnDefinition = "TEXT")
+    // [추가] 답변 텍스트 필드
+    @Column(name = "answer_text", columnDefinition = "TEXT")
     private String answerText;
 
     @CreatedDate
@@ -54,7 +55,7 @@ public class PartyApplication {
     public PartyApplication(Party party, User user, String answerText) {
         this.party = party;
         this.user = user;
-        this.status = ApplicationStatus.PENDING; // 생성 시 기본 상태
+        this.status = ApplicationStatus.PENDING; // 기본 상태
         this.answerText = answerText;
     }
 

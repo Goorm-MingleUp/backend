@@ -48,7 +48,48 @@ public class ReviewController {
             
             **[중요]** 모임에 '참석 완료(ATTENDED)' 상태인 경우에만 작성 가능합니다.
             """,
-            tags = {"Review"}
+            tags = {"Review"},
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    value = """
+                                    {
+                                      "reviews": [
+                                        {
+                                          "partyId": 5,
+                                          "reviewType": "PARTY",
+                                          "rating": 5,
+                                          "comment": "풋살장 잔디 상태가 너무 좋았고, 다들 매너 있게 플레이해서 즐거웠습니다!"
+                                        },
+                                        {
+                                          "partyId": 5,
+                                          "reviewType": "HOST",
+                                          "revieweeId": 6,
+                                          "rating": 5,
+                                          "comment": "호스트님이 경기 운영을 깔끔하게 잘 해주셨어요."
+                                        },
+                                        {
+                                          "partyId": 5,
+                                          "reviewType": "PARTICIPANT",
+                                          "revieweeId": 7,
+                                          "rating": 4,
+                                          "comment": "패스도 잘 주시고 호흡이 잘 맞았습니다."
+                                        },
+                                        {
+                                          "partyId": 5,
+                                          "reviewType": "AI_GROUP",
+                                          "aiGroupId": 100,
+                                          "rating": 3,
+                                          "comment": "실력이 비슷한 분들과 같은 팀이 되어서 밸런스가 좋았습니다."
+                                        }
+                                      ]
+                                    }
+                                    """
+                            )
+                    )
+            )
     )
     @ApiResponses({
             @ApiResponse(
@@ -56,7 +97,7 @@ public class ReviewController {
                     description = "작성 성공",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = CreateReviewResponse.class), // [추가] 스키마 정의
+                            schema = @Schema(implementation = CreateReviewResponse.class),
                             examples = @ExampleObject(value = """
                             {
                                 "success": true,
@@ -83,12 +124,12 @@ public class ReviewController {
             @ApiResponse(responseCode = "403", description = "권한 없음 (참석하지 않음 등)")
     })
     @PostMapping("/bulk")
-    public ResponseEntity<ApiResult<List<CreateReviewResponse>>> createBulkReviews( // [수정] 반환 타입 변경 Void -> List<...>
-                                                                                    Authentication authentication,
-                                                                                    @Valid @RequestBody BulkCreateReviewRequest request
+    public ResponseEntity<ApiResult<List<CreateReviewResponse>>> createBulkReviews(
+        Authentication authentication,
+        @Valid @RequestBody BulkCreateReviewRequest request
     ) {
         Long currentUserId = Long.parseLong(authentication.getName());
-        List<CreateReviewResponse> responses = reviewService.createBulkReviews(currentUserId, request); // [수정]
-        return ResponseEntity.ok(ApiResult.onSuccess(responses)); // [수정]
+        List<CreateReviewResponse> responses = reviewService.createBulkReviews(currentUserId, request);
+        return ResponseEntity.ok(ApiResult.onSuccess(responses));
     }
 }
