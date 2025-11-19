@@ -1,5 +1,6 @@
 package com.mingleup.backend.domain.application.repository;
 
+import com.mingleup.backend.domain.application.domain.ApplicationStatus;
 import com.mingleup.backend.domain.application.domain.PartyApplication;
 import com.mingleup.backend.domain.party.domain.Party;
 import com.mingleup.backend.domain.user.domain.User;
@@ -36,4 +37,6 @@ public interface PartyApplicationRepository extends JpaRepository<PartyApplicati
     Optional<PartyApplication> findByPartyAndUser(Party party, User user);
 
     Optional<PartyApplication> findByUserAndParty(User user, Party party);
+
+    Long countByParty_HostAndStatus(User host, ApplicationStatus status);
 }
