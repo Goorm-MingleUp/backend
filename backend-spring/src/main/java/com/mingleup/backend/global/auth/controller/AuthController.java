@@ -61,6 +61,9 @@ public class AuthController {
         scopeJoiner.add("birthyear"); // 출생 연도 (필수 동의)
         // 참고: age_range는 birthday, birthyear가 있으면 자동 추론 가능하여 별도 요청 안함
 
+        // [필수 추가] 이 줄을 꼭 추가해야 동의 화면에 뜹니다!
+        scopeJoiner.add("talk_message");
+
         String authUrl = kakaoProperties.getAuthUri()
                 + "?client_id=" + kakaoProperties.getClientId()
                 + "&redirect_uri=" + kakaoProperties.getRedirectUri()
