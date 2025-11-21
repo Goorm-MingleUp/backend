@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable; // [추가]
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List; // [추가]
 import java.util.Optional;
 
@@ -39,4 +40,10 @@ public interface PartyApplicationRepository extends JpaRepository<PartyApplicati
     Optional<PartyApplication> findByUserAndParty(User user, Party party);
 
     Long countByParty_HostAndStatus(User host, ApplicationStatus status);
+
+    Page<PartyApplication> findByPartyAndStatus(Party party, ApplicationStatus status, Pageable pageable);
+
+    List<PartyApplication> findAllByPartyAndStatus(Party party, ApplicationStatus status);
+
+    List<PartyApplication> findAllByPartyAndStatusIn(Party party, Collection<ApplicationStatus> statuses);
 }

@@ -82,6 +82,9 @@ public class User extends BaseTimeEntity {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    @Column(name = "kakao_access_token")
+    private String kakaoAccessToken;
+
     // --- 연관관계 (수정 없음) ---
     @OneToMany(mappedBy = "host", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Party> hostedParties = new ArrayList<>();
@@ -140,5 +143,9 @@ public class User extends BaseTimeEntity {
 
     public void updateAvgRating(BigDecimal newRating) {
         this.avgRating = newRating;
+    }
+
+    public void updateKakaoToken(String accessToken) {
+        this.kakaoAccessToken = accessToken;
     }
 }
