@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 @Slf4j
 @Service
@@ -20,64 +21,71 @@ import org.springframework.web.reactive.function.client.WebClient;
 public class NotificationService {
 
     private final WebClient webClient;
-
-    // 카카오 나에게 보내기 API URL
     private static final String KAKAO_SEND_ME_URL = "https://kapi.kakao.com/v2/api/talk/memo/default/send";
 
-    @Async
+    /**
+     * 1. 파티 신청 결과 알림 (승인/거절)
+     * - finalizeParty 시 모든 대상에게 발송됨
+     */
     public void sendApplicationResultNotification(User recipient, Party party, ApplicationStatus status) {
         String resultText = (status == ApplicationStatus.APPROVED) ? "승인되었습니다! 🎉" : "아쉽게도 거절되었습니다.";
         String message = String.format(
-                "['%s' 파티 신청 결과]\n\n결과: %s\n일시: %s",
+                "['%s' 파티 신청 결과]\\n\\n결과: %s\\n일시: %s",
                 party.getTitle(), resultText, party.getPartyDatetime()
         );
-
-        sendKakaoMemo(recipient, message, "https://mingleup.com"); // 링크는 임시
-    }
-
-    @Async
-    public void sendPartyFinalizationNotification(User recipient, Party party, ApplicationStatus status, AiGroup group) {
-        String message;
-        if (status == ApplicationStatus.APPROVED && group != null) {
-            message = String.format(
-                    "['%s' 파티 확정 & AI 매칭]\n\n나의 조: %s\n사유: %s\n\n즐거운 시간 되세요!",
-                    party.getTitle(), group.getGroupName(), group.getMatchingReason()
-            );
-        } else {
-            message = String.format("['%s' 파티 알림]\n\n아쉽게도 최종 명단에 포함되지 못했습니다.", party.getTitle());
-        }
-        sendKakaoMemo(recipient, message, "https://mingleup.com");
+        sendKakaoMemo(recipient, message);
     }
 
     /**
-     * [핵심] 카카오 '나에게 보내기' API 호출
+     * 2. AI 매칭 결과 알림 (조 편성)
+     * - finalizeParty 시 '승인된 참가자'에게만 발송됨
+     * - [수정] 거절 메시지 로직 제거 (위 메서드가 담당)
      */
-    private void sendKakaoMemo(User recipient, String text, String webUrl) {
+    public void sendPartyFinalizationNotification(User recipient, Party party, AiGroup group) {
+        if (group == null) return;
+
+        String reason = (group.getMatchingReason() != null) ? group.getMatchingReason() : "공통 관심사 매칭";
+        String message = String.format(
+                "['%s' 파티 확정 & 매칭]\\n\\n나의 조: %s\\n사유: %s\\n\\n즐거운 시간 되세요!",
+                party.getTitle(), group.getGroupName(), reason
+        );
+
+        sendKakaoMemo(recipient, message);
+    }
+
+    /**
+     * 3. 후기 작성 요청 알림
+     */
+    public void sendReviewRequestNotification(User recipient, Party party) {
+        String message = String.format(
+                "['%s' 파티는 즐거우셨나요?]\\n\\n소중한 후기를 남겨주세요!\\n호스트와 참가자들에게 큰 힘이 됩니다.\\n\\n(아래 버튼을 눌러 작성 페이지로 이동하세요)",
+                party.getTitle()
+        );
+        sendKakaoMemo(recipient, message);
+    }
+
+    private void sendKakaoMemo(User recipient, String text) {
         if (recipient.getKakaoAccessToken() == null) {
-            log.warn("유저 {}의 카카오 토큰이 없어 알림을 보낼 수 없습니다.", recipient.getName());
+            log.warn(">>> [전송 건너뜀] 유저 '{}'의 카카오 토큰이 없습니다.", recipient.getName());
             return;
         }
 
-        // 1. 메시지 템플릿 구성 (JSON 문자열)
         String templateObject = String.format(
                 "{" +
                         "\"object_type\": \"text\"," +
                         "\"text\": \"%s\"," +
                         "\"link\": {" +
-                        "\"web_url\": \"%s\"," +
-                        "\"mobile_web_url\": \"%s\"" +
+                        "\"web_url\": \"http://localhost:3000\"," +
+                        "\"mobile_web_url\": \"http://localhost:3000\"" +
                         "}," +
                         "\"button_title\": \"자세히 보기\"" +
                         "}",
-                // JSON 내 줄바꿈 등 특수문자 처리가 필요할 수 있음 (간단히 구현)
-                text.replace("\n", "\\n"), webUrl, webUrl
+                text.replace("\n", "\\n")
         );
 
-        // 2. 요청 파라미터 설정
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add("template_object", templateObject);
 
-        // 3. API 전송
         webClient.post()
                 .uri(KAKAO_SEND_ME_URL)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + recipient.getKakaoAccessToken())
@@ -86,8 +94,15 @@ public class NotificationService {
                 .retrieve()
                 .bodyToMono(String.class)
                 .subscribe(
-                        response -> log.info("카카오 알림 전송 성공: To {}", recipient.getName()),
-                        error -> log.error("카카오 알림 전송 실패: To {} (토큰 만료 가능성)", recipient.getName(), error)
+                        response -> log.info(">>> [카카오톡 전송 성공] To: {}", recipient.getName()),
+                        error -> {
+                            log.error(">>> [카카오톡 전송 실패] To: {}", recipient.getName());
+                            if (error instanceof WebClientResponseException ex) {
+                                log.error("Status: {}, Body: {}", ex.getStatusCode(), ex.getResponseBodyAsString());
+                            } else {
+                                log.error("Error: {}", error.getMessage());
+                            }
+                        }
                 );
     }
 }

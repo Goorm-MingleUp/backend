@@ -144,4 +144,28 @@ public class HostService {
             notificationService.sendApplicationResultNotification(app.getUser(), party, app.getStatus());
         }
     }
+    /**
+     * [신규] 후기 작성 요청 일괄 알림 발송
+     * - 대상: 파티에 '참석 완료(ATTENDED)'한 모든 참가자
+     */
+    @Transactional(readOnly = true)
+    public void sendReviewRequestNotifications(Long hostUserId, Long partyId) {
+        Party party = partyRepository.findById(partyId)
+                .orElseThrow(() -> new CustomException(ErrorCode.INTERNAL_SERVER_ERROR, "파티를 찾을 수 없습니다."));
+
+        if (!party.getHost().getId().equals(hostUserId)) {
+            throw new CustomException(ErrorCode.FORBIDDEN, "권한이 없습니다.");
+        }
+
+        // 참석 완료(ATTENDED)된 참가자 목록 조회
+        List<PartyApplication> attendedApps = partyApplicationRepository.findAllByPartyAndStatus(party, ApplicationStatus.ATTENDED);
+
+        if (attendedApps.isEmpty()) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "후기를 요청할 참석자가 없습니다. (참석 완료 처리가 되었는지 확인해주세요)");
+        }
+
+        for (PartyApplication app : attendedApps) {
+            notificationService.sendReviewRequestNotification(app.getUser(), party);
+        }
+    }
 }

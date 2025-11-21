@@ -430,4 +430,32 @@ public class HostController {
         aiMatchingService.finalizePartyAndSendNotification(hostUserId, partyId);
         return ResponseEntity.ok(ApiResult.onSuccess());
     }
+
+    /**
+     * [신규] 후기 작성 요청 일괄 알림 발송 API
+     * [POST] /api/v1/host/parties/{partyId}/notifications/review
+     */
+    @Operation(
+            summary = "후기 작성 요청 알림 발송",
+            description = """
+            파티가 종료된 후, 호스트가 참석자들에게 후기 작성을 요청하는 알림톡을 일괄 발송합니다.
+            **대상:** 해당 파티에 '참석 완료(ATTENDED)' 상태인 모든 유저
+            """,
+            tags = {"Host"}
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "발송 성공"),
+            @ApiResponse(responseCode = "400", description = "참석자가 없음"),
+            @ApiResponse(responseCode = "403", description = "권한 없음 (본인 파티 아님)")
+    })
+    @PostMapping("/parties/{partyId}/notifications/review")
+    public ResponseEntity<ApiResult<Void>> sendReviewRequestNotifications(
+            Authentication authentication,
+            @Parameter(description = "파티 ID", required = true)
+            @PathVariable Long partyId
+    ) {
+        Long hostUserId = Long.parseLong(authentication.getName());
+        hostService.sendReviewRequestNotifications(hostUserId, partyId);
+        return ResponseEntity.ok(ApiResult.onSuccess());
+    }
 }

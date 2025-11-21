@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -38,7 +39,7 @@ public class AiMatchingService {
     private final NotificationService notificationService;
 
     /**
-     * [수정] 1단계: AI 매칭 실행 (조 편성 및 DB 저장만 수행)
+     * 1단계: AI 매칭 실행 (자동 승인 + 조 편성 + DB 저장)
      */
     @Transactional
     public void runAiMatching(Long hostId, Long partyId) {
@@ -49,72 +50,77 @@ public class AiMatchingService {
             throw new CustomException(ErrorCode.FORBIDDEN, "매칭을 실행할 권한이 없습니다.");
         }
 
-        List<PartyApplication> approvedApps = partyApplicationRepository.findAllByPartyAndStatus(party, ApplicationStatus.APPROVED);
-
-        if (approvedApps.isEmpty()) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "매칭할 참가자(승인됨)가 없습니다.");
+        // 재매칭 시 기존 그룹 삭제
+        List<AiGroup> existingGroups = aiGroupRepository.findAllByParty(party);
+        if (!existingGroups.isEmpty()) {
+            aiGroupRepository.deleteAll(existingGroups);
+            aiGroupRepository.flush();
         }
 
-        log.info("[AI Matching] 파티 '{}' 매칭 실행. 인원: {}명", party.getTitle(), approvedApps.size());
+        // 대기(PENDING)와 승인(APPROVED) 상태인 모든 신청자 조회
+        List<PartyApplication> candidates = partyApplicationRepository.findAllByPartyAndStatusIn(
+                party, Arrays.asList(ApplicationStatus.PENDING, ApplicationStatus.APPROVED)
+        );
 
-        // (옵션) 기존 매칭 결과가 있다면 삭제 후 다시 생성하는 로직이 필요할 수 있음
-        // clearExistingGroups(party);
+        if (candidates.isEmpty()) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "매칭할 참가자(대기/승인)가 없습니다.");
+        }
 
-        performMatchingLogic(party, approvedApps);
+        log.info("[AI Matching] 파티 '{}' 매칭 실행. 후보 인원: {}명", party.getTitle(), candidates.size());
+
+        // PENDING 상태인 신청자들을 APPROVED로 변경 후 저장
+        boolean statusChanged = false;
+        for (PartyApplication app : candidates) {
+            if (app.getStatus() == ApplicationStatus.PENDING) {
+                app.updateStatus(ApplicationStatus.APPROVED);
+                statusChanged = true;
+            }
+        }
+        if (statusChanged) {
+            partyApplicationRepository.saveAll(candidates);
+        }
+
+        performMatchingLogic(party, candidates);
     }
 
-    /**
-     * [신규] AI 매칭 결과 조회 (호스트용)
-     */
     @Transactional(readOnly = true)
     public List<AiMatchingResponse> getMatchingResults(Long hostId, Long partyId) {
         Party party = partyRepository.findById(partyId)
-                .orElseThrow(() -> new CustomException(ErrorCode.INTERNAL_SERVER_ERROR, "파티를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.INTERNAL_SERVER_ERROR));
+        if (!party.getHost().getId().equals(hostId)) throw new CustomException(ErrorCode.FORBIDDEN);
 
-        if (!party.getHost().getId().equals(hostId)) {
-            throw new CustomException(ErrorCode.FORBIDDEN, "매칭 결과를 조회할 권한이 없습니다.");
-        }
-
-        List<AiGroup> groups = aiGroupRepository.findAllByParty(party);
-
-        return groups.stream()
+        return aiGroupRepository.findAllByParty(party).stream()
                 .map(AiMatchingResponse::from)
                 .collect(Collectors.toList());
     }
 
     /**
-     * [신규] 2단계: 파티 확정 및 알림 일괄 발송
+     * 2단계: 파티 확정 및 알림 일괄 발송
+     * - 파티 상태: SCHEDULED
+     * - 참가자 상태: APPROVED -> ATTENDED
+     * - 알림: 결과 알림(승인/거절) + 매칭 알림(조 편성) 모두 발송
      */
     @Transactional
     public void finalizePartyAndSendNotification(Long hostId, Long partyId) {
-        // 1. 파티 조회
         Party party = partyRepository.findById(partyId)
-                .orElseThrow(() -> new CustomException(ErrorCode.INTERNAL_SERVER_ERROR, "파티를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.INTERNAL_SERVER_ERROR));
+        if (!party.getHost().getId().equals(hostId)) throw new CustomException(ErrorCode.FORBIDDEN);
 
-        if (!party.getHost().getId().equals(hostId)) {
-            throw new CustomException(ErrorCode.FORBIDDEN, "권한이 없습니다.");
-        }
-
-        // 2. 파티 상태 변경 (SCHEDULED: 확정됨)
         party.updateStatus(PartyStatus.SCHEDULED);
-        log.info("파티 상태 변경: {} -> SCHEDULED", party.getTitle());
+        partyRepository.save(party); // 파티 상태 변경 저장
 
-        // 3. 통합 알림 발송 (승인자 + 거절자 모두)
         sendFinalizationNotifications(party);
     }
 
-    /**
-     * 내부 매칭 로직 (그룹핑)
-     */
-    private void performMatchingLogic(Party party, List<PartyApplication> approvedApps) {
+    private void performMatchingLogic(Party party, List<PartyApplication> applicants) {
+        Collections.shuffle(applicants); // 랜덤 셔플
         int groupSize = 4;
         int groupCount = 0;
         List<User> currentGroupUsers = new ArrayList<>();
 
-        for (int i = 0; i < approvedApps.size(); i++) {
-            currentGroupUsers.add(approvedApps.get(i).getUser());
-
-            if (currentGroupUsers.size() == groupSize || i == approvedApps.size() - 1) {
+        for (int i = 0; i < applicants.size(); i++) {
+            currentGroupUsers.add(applicants.get(i).getUser());
+            if (currentGroupUsers.size() == groupSize || i == applicants.size() - 1) {
                 groupCount++;
                 createGroup(party, groupCount, currentGroupUsers);
                 currentGroupUsers.clear();
@@ -122,49 +128,57 @@ public class AiMatchingService {
         }
     }
 
-    /**
-     * 그룹 및 멤버 DB 저장
-     */
     private void createGroup(Party party, int groupNumber, List<User> users) {
         String groupName = "AI 추천 " + groupNumber + "조";
         String matchingReason = "MBTI 성향과 활동 스타일이 유사한 멤버들입니다.";
-
         AiGroup aiGroup = AiGroup.builder()
-                .party(party)
-                .groupName(groupName)
-                .matchingReason(matchingReason)
-                .build();
-
+                .party(party).groupName(groupName).matchingReason(matchingReason).build();
         aiGroupRepository.save(aiGroup);
 
         for (User user : users) {
-            AiGroupMember member = AiGroupMember.builder()
-                    .aiGroup(aiGroup)
-                    .user(user)
-                    .build();
-            aiGroupMemberRepository.save(member);
+            aiGroupMemberRepository.save(AiGroupMember.builder().aiGroup(aiGroup).user(user).build());
         }
     }
 
     /**
-     * 확정 알림 일괄 발송 로직
+     * [수정] 확정 알림 발송 로직
+     * - 모든 대상에게 '결과 알림(승인/거절)' 발송
+     * - 승인된 사람에게 '매칭 정보 알림' 추가 발송
      */
     private void sendFinalizationNotifications(Party party) {
         List<PartyApplication> applications = partyApplicationRepository.findAllByPartyAndStatusIn(
                 party, Arrays.asList(ApplicationStatus.APPROVED, ApplicationStatus.REJECTED)
         );
 
+        List<PartyApplication> updatedApplications = new ArrayList<>();
+
         for (PartyApplication app : applications) {
             User recipient = app.getUser();
-            AiGroup assignedGroup = null;
+            ApplicationStatus originalStatus = app.getStatus();
 
-            if (app.getStatus() == ApplicationStatus.APPROVED) {
+            // 1. [공통] 참가 결과 알림 발송 (승인/거절 여부)
+            notificationService.sendApplicationResultNotification(recipient, party, originalStatus);
+
+            // 2. [승인자 전용] 상태 변경 및 매칭 정보 알림 발송
+            if (originalStatus == ApplicationStatus.APPROVED) {
                 Optional<AiGroupMember> memberOpt = aiGroupMemberRepository.findByAiGroup_PartyAndUser(party, recipient);
                 if (memberOpt.isPresent()) {
-                    assignedGroup = memberOpt.get().getAiGroup();
+                    AiGroup assignedGroup = memberOpt.get().getAiGroup();
+
+                    // 매칭 정보 알림 (조 편성 결과)
+                    notificationService.sendPartyFinalizationNotification(recipient, party, assignedGroup);
                 }
+
+                // 상태 변경 (APPROVED -> ATTENDED)
+                app.updateStatus(ApplicationStatus.ATTENDED);
+                updatedApplications.add(app);
             }
-            notificationService.sendPartyFinalizationNotification(recipient, party, app.getStatus(), assignedGroup);
+        }
+
+        // 변경된 상태 DB 저장
+        if (!updatedApplications.isEmpty()) {
+            partyApplicationRepository.saveAll(updatedApplications);
+            log.info("참가자 {}명의 상태를 ATTENDED로 변경 완료", updatedApplications.size());
         }
     }
 }
