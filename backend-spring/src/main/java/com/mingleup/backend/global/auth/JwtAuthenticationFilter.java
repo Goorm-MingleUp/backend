@@ -43,6 +43,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 // 토큰이 유효할 경우 토큰에서 Authentication 객체를 받아와서 SecurityContext에 저장
                 Authentication authentication = jwtTokenProvider.getAuthentication(token);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
+
+                //      *** 동현 ***
+                Long userId = jwtTokenProvider.getUserId(token);
+                request.setAttribute("userId", userId);
+
                 log.debug("Security Context에 '{}' 인증 정보를 저장했습니다, uri: {}", authentication.getName(), requestURI);
             } else {
                 log.debug("유효한 JWT 토큰이 없습니다, uri: {}", requestURI);

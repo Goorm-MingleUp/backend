@@ -1,6 +1,7 @@
 package com.mingleup.backend.domain.wishlist.controller;
 
 import com.mingleup.backend.domain.wishlist.dto.MyWishlistResponse;
+import com.mingleup.backend.domain.wishlist.dto.response.WishlistResponse;
 import com.mingleup.backend.domain.wishlist.service.WishlistService;
 import com.mingleup.backend.global.common.ApiResult;
 import io.swagger.v3.oas.annotations.Operation;
@@ -18,14 +19,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Wishlist", description = "찜하기 API")
 @RestController
-@RequestMapping("/api/v1/wishlists")
+@RequestMapping
 @RequiredArgsConstructor
 @SecurityRequirement(name = "bearerAuth")
 public class WishlistController {
@@ -124,7 +122,7 @@ public class WishlistController {
                     )
             )
     })
-    @GetMapping("/me")
+    @GetMapping("/api/v1/wishlists/me")
     public ResponseEntity<ApiResult<Page<MyWishlistResponse>>> getMyWishlistedParties(
            Authentication authentication,
            @Parameter(description = "페이지 번호 (0부터 시작)", example = "0")
@@ -147,4 +145,28 @@ public class WishlistController {
     }
 
     // (TODO: 찜하기(POST), 찜 취소(DELETE) API 추가)
+
+    @Operation(
+            summary = "파티 찜하기",
+            description = "해당 파티를 찜 목록에 추가합니다."
+    )
+    @PostMapping("/api/v1/{partyId}/wishlist")
+    public WishlistResponse addWish(
+            @PathVariable Long partyId,
+            @RequestAttribute("userId") Long userId
+    ) {
+        return wishlistService.add(partyId, userId);
+    }
+
+    @Operation(
+            summary = "파티 찜 취소",
+            description = "해당 파티를 찜 목록에서 제거합니다."
+    )
+    @DeleteMapping("/api/v1/{partyId}/wishlist")
+    public WishlistResponse removeWish(
+            @PathVariable Long partyId,
+            @RequestAttribute("userId") Long userId
+    ) {
+        return wishlistService.remove(partyId, userId);
+    }
 }

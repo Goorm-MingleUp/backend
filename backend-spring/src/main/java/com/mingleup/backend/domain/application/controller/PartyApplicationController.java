@@ -1,6 +1,9 @@
 package com.mingleup.backend.domain.application.controller; // [추가] 패키지 선언
 
 import com.mingleup.backend.domain.application.dto.MyApplicationResponse; // [추가]
+import com.mingleup.backend.domain.application.dto.PartyApplicationCancelResponse;
+import com.mingleup.backend.domain.application.dto.PartyApplicationRequest;
+import com.mingleup.backend.domain.application.dto.PartyApplicationResponse;
 import com.mingleup.backend.domain.application.service.PartyApplicationService; // [추가]
 import com.mingleup.backend.global.common.ApiResult; // [추가]
 import io.swagger.v3.oas.annotations.Operation; // [추가]
@@ -17,18 +20,15 @@ import org.springframework.data.domain.Page; // [추가]
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable; // [추가]
 import org.springframework.data.web.PageableDefault; // [추가]
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication; // [추가]
-import org.springframework.web.bind.annotation.GetMapping; // [추가]
-import org.springframework.web.bind.annotation.RequestMapping; // [추가]
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController; // [추가]
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @Tag(name = "Application", description = "모임 신청 API")
 @RestController
-@RequestMapping("/api/v1/applications")
 @RequiredArgsConstructor
 @SecurityRequirement(name = "bearerAuth")
 public class PartyApplicationController {
@@ -142,7 +142,7 @@ public class PartyApplicationController {
                     )
             )
     })
-    @GetMapping("/me")
+    @GetMapping("/api/v1/applications/me")
     public ResponseEntity<ApiResult<Page<MyApplicationResponse>>> getMyApplications(
          Authentication authentication,
          @Parameter(description = "페이지 번호 (0부터 시작)", example = "0")
@@ -166,4 +166,39 @@ public class PartyApplicationController {
     }
 
     // (TODO: 모임 신청(POST), 신청 취소(DELETE), 신청 승인/거절(PATCH) 등 API 추가)
+
+    @Operation(
+            summary = "파티 신청",
+            description = """
+                특정 파티에 참가 신청합니다.
+                - 파티에 등록된 단일 호스트 질문에 대한 자유서술( answer_text )을 함께 제출합니다.
+                - FCFS(선착순)일 경우 자동 승인, APPROVAL(승인제)일 경우 PENDING 상태로 생성됩니다.
+                - 중복 신청 불가
+                """
+    )
+    @PostMapping("/api/v1/parties/{partyId}/applications")
+    @ResponseStatus(HttpStatus.CREATED)
+    public PartyApplicationResponse apply(
+            @PathVariable Long partyId,
+            @RequestAttribute("userId") Long userId,
+            @RequestBody PartyApplicationRequest request
+    ) {
+        return partyApplicationService.apply(partyId, userId, request);
+    }
+
+    @Operation(
+            summary = "파티 신청 취소",
+            description = """
+                사용자가 자신이 신청한 파티를 취소합니다.
+                - 이미 종료된 파티는 취소할 수 없습니다.
+                """
+    )
+    @DeleteMapping("/api/v1/parties/{partyId}/applications")
+    public ResponseEntity<PartyApplicationCancelResponse> cancelApplication(
+            @PathVariable Long partyId,
+            @RequestAttribute("userId") Long userId
+    ) {
+        PartyApplicationCancelResponse response = partyApplicationService.cancelApplication(partyId, userId);
+        return ResponseEntity.ok(response);
+    }
 }

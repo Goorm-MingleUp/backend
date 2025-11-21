@@ -87,11 +87,10 @@ public class Party extends BaseTimeEntity {
     @Column(name = "status", nullable = false, length = 50)
     private PartyStatus status;
 
-    // --- 연관관계 ---
+    @Column(name = "host_question", columnDefinition = "TEXT")
+    private String hostQuestion;
 
-    // 1. 파티의 호스트 질문
-    @OneToMany(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<HostQuestion> hostQuestions = new ArrayList<>();
+    // --- 연관관계 ---
 
     // 2. 파티 신청 내역
     @OneToMany(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -111,7 +110,7 @@ public class Party extends BaseTimeEntity {
 
 
     @Builder
-    public Party(User host, String title, String description, String guidelines, String partyImageUrl, String category, List<String> subCategory, LocalDateTime partyDatetime, String locationName, String locationAddress, Double latitude, Double longitude, Integer minParticipants, Integer maxParticipants, RecruitmentMethod recruitmentMethod, Integer entryFee, List<String> tags) {
+    public Party(User host, String title, String description, String guidelines, String partyImageUrl, String category, List<String> subCategory, LocalDateTime partyDatetime, String locationName, String locationAddress, Double latitude, Double longitude, Integer minParticipants, Integer maxParticipants, RecruitmentMethod recruitmentMethod, Integer entryFee, List<String> tags, String hostQuestion) {
         this.host = host;
         this.title = title;
         this.description = description;
@@ -129,11 +128,46 @@ public class Party extends BaseTimeEntity {
         this.recruitmentMethod = recruitmentMethod;
         this.entryFee = (entryFee != null) ? entryFee : 0;
         this.tags = (tags != null) ? tags : new ArrayList<>();
-        this.status = PartyStatus.RECRUITING; // 생성 시 기본 상태
+        this.status = PartyStatus.RECRUITING;
+        this.hostQuestion = hostQuestion;
     }
 
     // == 비즈니스 로직 == //
     public void updateStatus(PartyStatus status) {
         this.status = status;
+    }
+
+    public void updateParty(
+            String title,
+            String description,
+            String guidelines,
+            String partyImageUrl,
+            String category,
+            List<String> subCategory,
+            LocalDateTime partyDatetime,
+            String locationName,
+            String locationAddress,
+            Integer minParticipants,
+            Integer maxParticipants,
+            String recruitmentMethod,
+            Integer entryFee,
+            List<String> tags,
+            String hostQuestion
+    ) {
+        this.title = title;
+        this.description = description;
+        this.guidelines = guidelines;
+        this.partyImageUrl = partyImageUrl;
+        this.category = category;
+        this.subCategory = subCategory;
+        this.partyDatetime = partyDatetime;
+        this.locationName = locationName;
+        this.locationAddress = locationAddress;
+        this.minParticipants = minParticipants;
+        this.maxParticipants = maxParticipants;
+        this.recruitmentMethod = RecruitmentMethod.valueOf(recruitmentMethod.toUpperCase());
+        this.entryFee = entryFee;
+        this.tags = tags;
+        this.hostQuestion = hostQuestion;
     }
 }

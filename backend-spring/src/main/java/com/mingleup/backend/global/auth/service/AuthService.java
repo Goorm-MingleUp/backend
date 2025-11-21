@@ -1,4 +1,4 @@
-package com.mingleup.backend.global.auth.service; // [수정] 올바른 패키지 경로
+package com.mingleup.backend.global.auth.service;
 
 import com.mingleup.backend.domain.user.domain.Gender;
 import com.mingleup.backend.domain.user.domain.Role;
@@ -60,7 +60,6 @@ public class AuthService {
         String jwtToken = jwtTokenProvider.createToken(user.getId(), user.getRole());
         log.info("MingleUp JWT 토큰 생성 완료");
 
-        // [수정] LoginResponse 생성자 변경 (isNewUser -> user.getId(), user.getName())
         return new LoginResponse(jwtToken, user.getId(), user.getName());
     }
 

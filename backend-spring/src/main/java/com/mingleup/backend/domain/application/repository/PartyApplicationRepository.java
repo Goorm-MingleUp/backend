@@ -1,6 +1,7 @@
 package com.mingleup.backend.domain.application.repository;
 
 import com.mingleup.backend.domain.application.domain.PartyApplication;
+import com.mingleup.backend.domain.party.domain.Party;
 import com.mingleup.backend.domain.user.domain.User;
 import org.springframework.data.domain.Page; // [추가]
 import org.springframework.data.domain.Pageable; // [추가]
@@ -8,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List; // [추가]
+import java.util.Optional;
 
 @Repository
 public interface PartyApplicationRepository extends JpaRepository<PartyApplication, Long> {
@@ -28,4 +30,10 @@ public interface PartyApplicationRepository extends JpaRepository<PartyApplicati
      * @return
      */
     Page<PartyApplication> findByUser(User user, Pageable pageable); // [수정]
+
+    boolean existsByUserAndParty(User user, Party party);
+
+    Optional<PartyApplication> findByPartyAndUser(Party party, User user);
+
+    Optional<PartyApplication> findByUserAndParty(User user, Party party);
 }

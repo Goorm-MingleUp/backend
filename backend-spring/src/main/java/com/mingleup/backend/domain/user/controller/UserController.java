@@ -29,7 +29,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List; // [추가]
 
-
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
@@ -166,9 +165,8 @@ public class UserController {
         return ResponseEntity.ok(ApiResult.onSuccess()); // result: null
     }
 
-    // --- [API 4] ---
     /**
-     * (신규) 타인 프로필 조회 API
+     * 유저 프로필 조회 API
      * [GET] /api/v1/users/{userId}
      */
     @Operation(
@@ -252,9 +250,8 @@ public class UserController {
         return ResponseEntity.ok(ApiResult.onSuccess(userProfile));
     }
 
-    // --- [API 5] ---
     /**
-     * (신규) 타인 후기 목록 조회 API
+     * 유저 후기 목록 조회 API
      * [GET] /api/v1/users/{userId}/reviews
      */
     @Operation(
@@ -332,11 +329,11 @@ public class UserController {
     })
     @GetMapping("/{userId}/reviews")
     public ResponseEntity<ApiResult<Page<UserReviewResponse>>> getUserReviews( // [수정] List -> Page
-                                                                               @Parameter(description = "후기 목록을 조회할 대상 사용자의 ID", required = true)
-                                                                               @PathVariable Long userId,
-                                                                               Authentication authentication,
-                                                                               @Parameter(description = "페이징 설정 (page, size, sort)") // [추가]
-                                                                               @PageableDefault(size = 10, page = 0) Pageable pageable // [추가]
+           @Parameter(description = "후기 목록을 조회할 대상 사용자의 ID", required = true)
+           @PathVariable Long userId,
+           Authentication authentication,
+           @Parameter(description = "페이징 설정 (page, size, sort)") // [추가]
+           @PageableDefault(size = 10, page = 0) Pageable pageable // [추가]
     ) {
         Long currentUserId = Long.parseLong(authentication.getName());
         // [수정] pageable 파라미터 전달

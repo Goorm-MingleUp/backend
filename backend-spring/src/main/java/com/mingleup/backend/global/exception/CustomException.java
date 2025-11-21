@@ -2,9 +2,6 @@ package com.mingleup.backend.global.exception;
 
 import lombok.Getter;
 
-/**
- * 전역에서 사용할 커스텀 예외 클래스
- */
 @Getter
 public class CustomException extends RuntimeException {
 
@@ -32,3 +29,4 @@ public class CustomException extends RuntimeException {
         this.detailMessage = detailMessage; // 'result'에 담길 상세 메시지는 따로 보관
     }
 }
+
