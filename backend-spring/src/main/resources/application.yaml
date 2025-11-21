@@ -13,6 +13,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://mingleup-db:3306/mingleup-db?serverTimezone=Asia/Seoul&createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=UTF-8&useUnicode=true
     username: root
+    password: ${SPRING_DATASOURCE_PASSWORD}
   messages:
     encoding: UTF-8
 
