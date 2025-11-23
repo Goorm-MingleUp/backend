@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -39,9 +40,9 @@ public class AuthController {
             description = """
                     **[토큰을 받아오려면 이 API를 호출하세요]**
                     http://localhost:8080/api/v1/auth/kakao/login
-                    
+
                     클라이언트(브라우저)에서 이 API를 호출하면, 사용자는 카카오 로그인 페이지로 리디렉션됩니다.
-                    
+
                     로그인 성공 후, 사용자는 /api/v1/auth/kakao/callback으로 리디렉션되고, 서버는 최종적으로 프론트엔드 URL(http://localhost:3000/auth-redirect)로 JWT 토큰과 사용자 정보를 쿼리 파라미터에 담아 리디렉션시킵니다.
                     """,
             tags = {"Auth"}
@@ -94,30 +95,25 @@ public class AuthController {
     })
     @GetMapping("/kakao/callback")
     public ResponseEntity<Void> handleKakaoCallback(@RequestParam("code") String code) {
-        log.info("카카오 인가 코드 수신: {}", code);
-        String frontendRedirectUrl = "http://localhost:3000/auth-redirect";
-        String errorUrl = "http://localhost:3000/login-error";
+        log.info("카카오 로그인 요청 (인가 코드 수신): {}", code);
 
-        try {
-            // AuthService를 통해 카카오 로그인 처리 및 MingleUp JWT 발급
-            LoginResponse loginResponse = authService.processKakaoLogin(code);
+        // 1. 토큰 발급
+        LoginResponse loginResponse = authService.processKakaoLogin(code);
+        String jwtToken = loginResponse.getJwtToken();
 
-            // 성공 시 token, userId, name을 URL에 추가
-            String successUrl = frontendRedirectUrl
-                    + "?token=" + loginResponse.getJwtToken()
-                    + "&userId=" + loginResponse.getUserId()
-                    + "&name=" + URLEncoder.encode(loginResponse.getName(), StandardCharsets.UTF_8); // 이름 URL 인코딩
+        // 2. 쿠키 생성 (HttpOnly 설정으로 자바스크립트 접근 불가 -> 보안 강화)
+        ResponseCookie cookie = ResponseCookie.from("accessToken", jwtToken)
+                .httpOnly(true)          // JS에서 쿠키 접근 불가능 (XSS 방지)
+                .secure(false)           // https 적용 시 true로 변경 (로컬은 false)
+                .path("/")               // 모든 경로에서 쿠키 전송
+                .maxAge(60 * 60)         // 1시간 (토큰 만료시간과 맞춤)
+                .sameSite("Lax")         // CSRF 보호 및 리다이렉트 시 쿠키 유지
+                .build();
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setLocation(URI.create(successUrl));
-            return new ResponseEntity<>(headers, HttpStatus.FOUND); // 302
-
-        } catch (Exception e) {
-            log.error("카카오 로그인 처리 중 에러 발생", e);
-            // 실패 시 에러 페이지로 리디렉션
-            HttpHeaders headers = new HttpHeaders();
-            headers.setLocation(URI.create(errorUrl));
-            return new ResponseEntity<>(headers, HttpStatus.FOUND);
-        }
+        // 3. 프론트엔드 메인으로 리다이렉트 (헤더에 쿠키 포함)
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .location(URI.create("http://localhost:3000/home")) // 프론트엔드 홈 URL
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .build();
     }
 }
