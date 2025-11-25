@@ -25,7 +25,7 @@ public class ReviewService {
         Party party = partyRepository.findById(partyId)
                 .orElseThrow(() -> new CustomException(ErrorCode.PARTY_NOT_FOUND));
 
-        List<Review> reviews = reviewRepository.findAllByParty(partyId);
+        List<Review> reviews = reviewRepository.findAllByPartyId(partyId);
 
         List<PartyReviewResponse> reviewResponses = reviews.stream()
                 .map(review -> new PartyReviewResponse(

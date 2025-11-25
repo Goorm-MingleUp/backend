@@ -27,8 +27,8 @@ spring:
 cloud:
   aws:
     credentials:
-      access-key: ${AWS_ACCESS_KEY_ID}
-      secret-key: ${AWS_SECRET_ACCESS_KEY}
+      access-key: ${AWS_ACCESS_KEY_ID:dummy}
+      secret-key: ${AWS_SECRET_ACCESS_KEY:dummy}
     region: ap-northeast-2
     s3:
       bucket: mingleup-bucket-name

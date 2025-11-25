@@ -1,5 +1,6 @@
 package com.mingleup.backend.domain.party.controller;
 
+import com.mingleup.backend.domain.party.domain.PartyCategory;
 import com.mingleup.backend.domain.party.dto.request.PartyCreateRequest;
 import com.mingleup.backend.domain.party.dto.request.PartyThumbnailUpdateRequest;
 import com.mingleup.backend.domain.party.dto.request.PartyUpdateRequest;
@@ -8,6 +9,7 @@ import com.mingleup.backend.domain.party.dto.response.HostQuestionResponse;
 import com.mingleup.backend.domain.party.dto.response.PartyCreateResponse;
 import com.mingleup.backend.domain.party.dto.response.PartyDetailResponse;
 import com.mingleup.backend.domain.party.dto.response.PartyListResponse;
+import com.mingleup.backend.domain.party.service.PartyCategoryService;
 import com.mingleup.backend.domain.party.service.PartyService;
 import com.mingleup.backend.domain.wishlist.service.WishlistService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -27,6 +30,7 @@ public class PartyController {
 
     private final PartyService partyService;
     private final WishlistService wishlistService;
+    private final PartyCategoryService partyCategoryService;
 
     @Operation(
             summary = "파티 리스트 조회",

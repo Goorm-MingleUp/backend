@@ -343,7 +343,7 @@ public class UserController {
         return ResponseEntity.ok(ApiResult.onSuccess(reviews));
     }
 
-    @Operation(summary = "유저 프로필 이미지 URL 업데이트")
+    @Operation(summary = "유저 프로필 이미지 URL 업데이트", tags = "User")
     @PatchMapping("/me/profile-image")
     public ResponseEntity<Map<String, Object>> updateProfileImage(
             @RequestAttribute("userId") Long userId,

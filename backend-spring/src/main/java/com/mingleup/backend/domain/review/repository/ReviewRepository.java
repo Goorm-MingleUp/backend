@@ -35,7 +35,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
      // ... (기존 코드)
      */
 
-    List<Review> findAllByParty(Long partyId);
+    List<Review> findAllByPartyId(Long partyId);
 
     boolean existsByReviewerAndRevieweeAndParty(User reviewer, User reviewee, Party party);
 }

@@ -3,6 +3,7 @@ package com.mingleup.backend.global.s3;
 import com.mingleup.backend.global.s3.dto.PresignedUrlRequest;
 import com.mingleup.backend.global.s3.dto.PresignedUrlResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -13,6 +14,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/s3")
 @RequiredArgsConstructor
+@Tag(name = "S3", description = "이미지 업로드 API")
 public class S3Controller {
 
     private final S3Service s3Service;

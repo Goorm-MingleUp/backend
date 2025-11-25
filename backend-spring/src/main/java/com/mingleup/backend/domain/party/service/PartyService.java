@@ -22,6 +22,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -150,6 +153,9 @@ public class PartyService {
         );
     }
 
+    /**
+     * 파티 이미지 수정
+     */
     @Transactional
     public void updatePartyThumbnail(Long partyId, Long hostId, UpdatePartyThumbnailRequest request) {
         Party party = partyRepository.findById(partyId)

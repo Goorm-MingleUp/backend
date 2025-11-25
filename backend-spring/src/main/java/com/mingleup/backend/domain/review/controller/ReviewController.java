@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/reviews")
 @RequiredArgsConstructor
 @SecurityRequirement(name = "bearerAuth")
-public class PartyController {
+public class ReviewController {
 
     private final ReviewService reviewService;
 
