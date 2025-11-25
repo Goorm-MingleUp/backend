@@ -34,5 +34,8 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
      * [신규] 특정 모임(party)에서, 특정 작성자(reviewer)가
      // ... (기존 코드)
      */
+
+    List<Review> findAllByParty(Long partyId);
+
     boolean existsByReviewerAndRevieweeAndParty(User reviewer, User reviewee, Party party);
 }
