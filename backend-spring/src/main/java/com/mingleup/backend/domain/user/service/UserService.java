@@ -5,10 +5,7 @@ import com.mingleup.backend.domain.review.domain.Review;
 import com.mingleup.backend.domain.review.repository.ReviewRepository; // [추가]
 import com.mingleup.backend.domain.user.domain.Role; // [추가]
 import com.mingleup.backend.domain.user.domain.User;
-import com.mingleup.backend.domain.user.dto.UserInfoResponse;
-import com.mingleup.backend.domain.user.dto.UpdateUserInfoRequest;
-import com.mingleup.backend.domain.user.dto.UserProfileResponse; // [추가]
-import com.mingleup.backend.domain.user.dto.UserReviewResponse; // [추가]
+import com.mingleup.backend.domain.user.dto.*;
 import com.mingleup.backend.domain.user.repository.UserRepository;
 import com.mingleup.backend.global.exception.CustomException;
 import com.mingleup.backend.global.exception.ErrorCode;
@@ -216,5 +213,13 @@ public class UserService {
         user.updateAvgRating(newRating); // [수정] user.updateHostAvgRating -> user.updateAvgRating (제공된 코드 기준)
 
         // @Transactional(readOnly=false)이므로 Dirty Checking에 의해 자동 저장됩니다.
+    }
+
+    @Transactional
+    public void updateProfileImage(Long userId, UpdateUserProfileImageRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        user.updateProfileImage(request.imageUrl());
     }
 }

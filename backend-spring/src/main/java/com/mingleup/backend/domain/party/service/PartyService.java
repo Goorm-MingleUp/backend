@@ -3,6 +3,7 @@ package com.mingleup.backend.domain.party.service;
 import com.mingleup.backend.domain.party.domain.*;
 import com.mingleup.backend.domain.party.dto.request.PartyCreateRequest;
 import com.mingleup.backend.domain.party.dto.request.PartyUpdateRequest;
+import com.mingleup.backend.domain.party.dto.request.UpdatePartyThumbnailRequest;
 import com.mingleup.backend.domain.party.dto.response.HostQuestionResponse;
 import com.mingleup.backend.domain.party.dto.response.PartyCreateResponse;
 import com.mingleup.backend.domain.party.dto.response.PartyDetailResponse;
@@ -53,6 +54,7 @@ public class PartyService {
      */
     @Transactional(readOnly = true)
     public PartyDetailResponse getParty(Long partyId) {
+
         Party party = partyRepository.findById(partyId)
                 .orElseThrow(() -> new CustomException(ErrorCode.PARTY_NOT_FOUND));
 
@@ -146,5 +148,18 @@ public class PartyService {
                 party.getId(),
                 party.getHostQuestion()
         );
+    }
+
+    @Transactional
+    public void updatePartyThumbnail(Long partyId, Long hostId, UpdatePartyThumbnailRequest request) {
+        Party party = partyRepository.findById(partyId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PARTY_NOT_FOUND));
+
+        // 호스트 검사 (옵션)
+        if (!party.getHost().getId().equals(hostId)) {
+            throw new CustomException(ErrorCode.FORBIDDEN);
+        }
+
+        party.updateThumbnail(request.imageUrl());
     }
 }

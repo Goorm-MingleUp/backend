@@ -137,6 +137,8 @@ public class Party extends BaseTimeEntity {
         this.status = status;
     }
 
+    public void updateThumbnail(String partyImageUrl) { this.partyImageUrl = partyImageUrl; }
+
     public void updateParty(
             String title,
             String description,

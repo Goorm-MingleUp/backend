@@ -24,6 +24,11 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.MySQLDialect
 
-
-
-
+cloud:
+  aws:
+    credentials:
+      access-key: ${AWS_ACCESS_KEY_ID}
+      secret-key: ${AWS_SECRET_ACCESS_KEY}
+    region: ap-northeast-2
+    s3:
+      bucket: mingleup-bucket-name

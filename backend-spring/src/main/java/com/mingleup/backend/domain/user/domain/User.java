@@ -141,4 +141,6 @@ public class User extends BaseTimeEntity {
     public void updateAvgRating(BigDecimal newRating) {
         this.avgRating = newRating;
     }
+
+    public void updateProfileImage(String newProfileImageUrl) { this.profileImageUrl = profileImageUrl; }
 }

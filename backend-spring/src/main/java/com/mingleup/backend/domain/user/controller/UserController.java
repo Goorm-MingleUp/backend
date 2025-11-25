@@ -1,10 +1,7 @@
 package com.mingleup.backend.domain.user.controller;
 
-import com.mingleup.backend.domain.user.dto.UserInfoResponse;
-import com.mingleup.backend.domain.user.dto.UpdateUserInfoRequest;
+import com.mingleup.backend.domain.user.dto.*;
 
-import com.mingleup.backend.domain.user.dto.UserProfileResponse; // [추가]
-import com.mingleup.backend.domain.user.dto.UserReviewResponse; // [추가]
 import com.mingleup.backend.domain.user.service.UserService;
 import com.mingleup.backend.global.common.ApiResult;
 import io.swagger.v3.oas.annotations.Operation;
@@ -24,10 +21,12 @@ import org.springframework.data.web.PageableDefault; // [추가]
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 
 import java.util.List; // [추가]
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -342,5 +341,24 @@ public class UserController {
         Page<UserReviewResponse> reviews = userService.getUserReviews(userId, currentUserId, pageable);
 
         return ResponseEntity.ok(ApiResult.onSuccess(reviews));
+    }
+
+    @Operation(summary = "유저 프로필 이미지 URL 업데이트")
+    @PatchMapping("/me/profile-image")
+    public ResponseEntity<Map<String, Object>> updateProfileImage(
+            @RequestAttribute("userId") Long userId,
+            @RequestBody UpdateUserProfileImageRequest request
+    ) {
+
+        userService.updateProfileImage(userId, request);
+
+        return ResponseEntity.ok(
+                Map.of(
+                        "isSuccess", true,
+                        "code", "COMMON200",
+                        "message", "프로필 이미지가 수정되었습니다.",
+                        "result", ""
+                )
+        );
     }
 }

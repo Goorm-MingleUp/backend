@@ -1,7 +1,9 @@
 package com.mingleup.backend.domain.party.controller;
 
 import com.mingleup.backend.domain.party.dto.request.PartyCreateRequest;
+import com.mingleup.backend.domain.party.dto.request.PartyThumbnailUpdateRequest;
 import com.mingleup.backend.domain.party.dto.request.PartyUpdateRequest;
+import com.mingleup.backend.domain.party.dto.request.UpdatePartyThumbnailRequest;
 import com.mingleup.backend.domain.party.dto.response.HostQuestionResponse;
 import com.mingleup.backend.domain.party.dto.response.PartyCreateResponse;
 import com.mingleup.backend.domain.party.dto.response.PartyDetailResponse;
@@ -12,7 +14,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -93,5 +98,25 @@ public class PartyController {
     @GetMapping("/{partyId}/question")
     public HostQuestionResponse getHostQuestion(@PathVariable Long partyId) {
         return partyService.getHostQuestion(partyId);
+    }
+
+    @Operation(summary = "파티 썸네일 이미지 URL 업데이트")
+    @PatchMapping("/{partyId}/thumbnail")
+    public ResponseEntity<Map<String, Object>> updatePartyThumbnail(
+           @RequestAttribute("userId") Long userId,
+            @PathVariable Long partyId,
+            @RequestBody UpdatePartyThumbnailRequest request
+    ) {
+
+        partyService.updatePartyThumbnail(partyId, userId, request);
+
+        return ResponseEntity.ok(
+                Map.of(
+                        "isSuccess", true,
+                        "code", "COMMON200",
+                        "message", "파티 썸네일이 수정되었습니다.",
+                        "result", ""
+                )
+        );
     }
 }
