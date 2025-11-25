@@ -36,32 +36,24 @@ public class ReviewService {
     private final PartyApplicationRepository partyApplicationRepository;
     private final AiGroupRepository aiGroupRepository;
 
-    /**
-     * 여러 후기를 일괄 생성하고, 생성된 후기 정보를 반환합니다.
-     */
     @Transactional
-    public List<CreateReviewResponse> createBulkReviews(Long currentUserId, BulkCreateReviewRequest request) { // [수정] 반환 타입 변경
+    public List<CreateReviewResponse> createBulkReviews(Long currentUserId, BulkCreateReviewRequest request) {
         List<CreateReviewResponse> responses = new ArrayList<>();
-
         for (CreateReviewRequest reviewRequest : request.getReviews()) {
-            // 내부 로직 실행 후 저장된 엔티티 반환
             Review savedReview = processSingleReview(currentUserId, reviewRequest);
-            // 응답 리스트에 추가
             responses.add(CreateReviewResponse.from(savedReview));
         }
-
         return responses;
     }
 
     /**
-     * 단건 후기 처리 로직 (저장된 Review 엔티티 반환)
+     * 단건 후기 처리 로직 (생성 또는 수정)
      */
-    private Review processSingleReview(Long currentUserId, CreateReviewRequest request) { // [수정] 반환 타입 void -> Review
-        // 1. 엔티티 조회
-        User reviewer = findUserById(currentUserId); // 후기 작성자
+    private Review processSingleReview(Long currentUserId, CreateReviewRequest request) {
+        User reviewer = findUserById(currentUserId);
         Party party = findPartyById(request.getPartyId());
 
-        // 2. [Validation] 모임 참석 여부 검증
+        // 1. 참석 여부 검증
         PartyApplication application = partyApplicationRepository.findByUserAndParty(reviewer, party)
                 .orElseThrow(() -> new CustomException(ErrorCode.FORBIDDEN, "이 모임에 신청한 내역이 없습니다."));
 
@@ -69,11 +61,12 @@ public class ReviewService {
             throw new CustomException(ErrorCode.FORBIDDEN, "이 모임에 '참석 완료' 상태가 아니면 후기를 남길 수 없습니다.");
         }
 
-        // 3. 후기 타입에 따라 대상(reviewee) 및 중복 검증
         ReviewType type = request.getReviewType();
         User reviewee = null;
         AiGroup aiGroup = null;
+        Review existingReview = null;
 
+        // 2. 타입별 대상 조회 및 기존 후기 검색
         switch (type) {
             case HOST:
             case PARTICIPANT:
@@ -81,20 +74,16 @@ public class ReviewService {
                     throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "HOST 또는 PARTICIPANT 후기에는 'revieweeId'가 필수입니다.");
                 }
                 reviewee = findUserById(request.getRevieweeId());
-
                 if (reviewer.getId().equals(reviewee.getId())) {
                     throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "자기 자신을 리뷰할 수 없습니다.");
                 }
-
-                if (reviewRepository.existsByReviewerAndRevieweeAndParty(reviewer, reviewee, party)) {
-                    throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "해당 모임에서 이 유저에 대한 후기를 이미 작성했습니다. (User ID: " + request.getRevieweeId() + ")");
-                }
+                // [수정] 기존 후기가 있는지 조회 (Upsert)
+                existingReview = reviewRepository.findByReviewerAndRevieweeAndParty(reviewer, reviewee, party).orElse(null);
                 break;
 
             case PARTY:
-                if (reviewRepository.existsByReviewerAndPartyAndReviewType(reviewer, party, ReviewType.PARTY)) {
-                    throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "해당 모임에 대한 후기를 이미 작성했습니다.");
-                }
+                // [수정] 기존 후기가 있는지 조회 (Upsert)
+                existingReview = reviewRepository.findByReviewerAndPartyAndReviewType(reviewer, party, ReviewType.PARTY).orElse(null);
                 break;
 
             case AI_GROUP:
@@ -102,42 +91,46 @@ public class ReviewService {
                     throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "AI_GROUP 후기에는 'aiGroupId'가 필수입니다.");
                 }
                 aiGroup = findAiGroupById(request.getAiGroupId());
-
-                // [Validation] 이 AI 그룹이 이 파티의 그룹인지 확인
                 if (!aiGroup.getParty().getId().equals(party.getId())) {
                     throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "해당 AI 그룹이 모임에 속해있지 않습니다.");
                 }
-
-                if (reviewRepository.existsByReviewerAndAiGroup(reviewer, aiGroup)) {
-                    throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "해당 AI 그룹에 대한 후기를 이미 작성했습니다.");
-                }
+                // [수정] 기존 후기가 있는지 조회 (Upsert)
+                existingReview = reviewRepository.findByReviewerAndAiGroup(reviewer, aiGroup).orElse(null);
                 break;
 
             default:
                 throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "유효하지 않은 후기 타입입니다.");
         }
 
+        Review reviewToSave;
 
-        // 4. Review 엔티티 생성
-        Review review = Review.builder()
-                .party(party)
-                .reviewer(reviewer)
-                .reviewType(type)
-                .reviewee(reviewee) // HOST/PARTICIPANT가 아니면 null
-                .aiGroup(aiGroup) // AI_GROUP이 아니면 null
-                .rating(request.getRating())
-                .comment(request.getComment())
-                .build();
+        // 3. 생성 또는 수정 처리
+        if (existingReview != null) {
+            // [수정] 기존 후기가 있으면 내용 업데이트
+            existingReview.update(request.getRating(), request.getComment());
+            reviewToSave = existingReview;
+        } else {
+            // [신규] 없으면 새로 생성
+            reviewToSave = Review.builder()
+                    .party(party)
+                    .reviewer(reviewer)
+                    .reviewType(type)
+                    .reviewee(reviewee)
+                    .aiGroup(aiGroup)
+                    .rating(request.getRating())
+                    .comment(request.getComment())
+                    .build();
+        }
 
-        // 5. 후기 저장
-        Review savedReview = reviewRepository.save(review); // [수정] 저장된 객체 반환
+        // 4. 저장 (수정의 경우 Dirty Checking이 동작하지만 명시적으로 save 호출)
+        Review savedReview = reviewRepository.save(reviewToSave);
 
-        // 6. [핵심] 사용자 평점 갱신
+        // 5. 평점 갱신 (수정된 평점 반영을 위해 반드시 호출)
         if (reviewee != null) {
             userService.updateUserAverageRating(reviewee.getId());
         }
 
-        return savedReview; // [추가]
+        return savedReview;
     }
 
 

@@ -65,4 +65,9 @@ public class Review {
         this.rating = rating;
         this.comment = comment;
     }
+    // [신규] 후기 수정 비즈니스 로직
+    public void update(Integer rating, String comment) {
+        this.rating = rating;
+        this.comment = comment;
+    }
 }

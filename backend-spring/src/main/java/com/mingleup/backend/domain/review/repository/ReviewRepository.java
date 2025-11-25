@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional; // [추가]
 
 @Repository
 public interface ReviewRepository extends JpaRepository<Review, Long> {
@@ -33,21 +34,19 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     List<Review> findAllByReviewee(User reviewee); // [수정] findByReviewee -> findAllByReviewee
 
     /**
-     * 특정 모임(party)에서, 특정 작성자(reviewer)가
+     * [수정] 존재 여부(boolean) 대신 엔티티(Optional) 반환으로 변경하여 수정 기능 지원
+     * 특정 모임(party)에서, 특정 작성자(reviewer)가 특정 대상자(reviewee)에게 남긴 후기 조회
      */
-    boolean existsByReviewerAndRevieweeAndParty(User reviewer, User reviewee, Party party);
-    /**
-     * [신규] 특정 모임(party)에서, 특정 작성자(reviewer)가
-     * 특정 타입(PARTY)의 후기를 남겼는지 확인합니다.
-     * (파티 후기 중복 방지용)
-     */
-    boolean existsByReviewerAndPartyAndReviewType(User reviewer, Party party, ReviewType reviewType);
+    Optional<Review> findByReviewerAndRevieweeAndParty(User reviewer, User reviewee, Party party);
 
     /**
-     * [신규] 특정 작성자(reviewer)가
-     * 특정 AI 그룹(aiGroup)에게 후기를 남겼는지 확인합니다.
-     * (AI 그룹 후기 중복 방지용)
+     * [수정] 특정 모임(party)에서, 특정 작성자(reviewer)가 남긴 파티 후기 조회
      */
-    boolean existsByReviewerAndAiGroup(User reviewer, AiGroup aiGroup);
+    Optional<Review> findByReviewerAndPartyAndReviewType(User reviewer, Party party, ReviewType reviewType);
+
+    /**
+     * [수정] 특정 작성자(reviewer)가 특정 AI 그룹(aiGroup)에게 남긴 후기 조회
+     */
+    Optional<Review> findByReviewerAndAiGroup(User reviewer, AiGroup aiGroup);
 
 }
