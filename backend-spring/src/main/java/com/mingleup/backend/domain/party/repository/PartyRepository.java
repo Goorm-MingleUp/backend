@@ -2,12 +2,15 @@ package com.mingleup.backend.domain.party.repository;
 
 import com.mingleup.backend.domain.party.domain.Party;
 import com.mingleup.backend.domain.party.domain.PartyStatus;
+import com.mingleup.backend.domain.user.domain.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+@Repository
 public interface PartyRepository extends JpaRepository<Party, Long> {
 
     @Query("""
@@ -23,4 +26,10 @@ public interface PartyRepository extends JpaRepository<Party, Long> {
             @Param("status") PartyStatus status,
             Pageable pageable
     );
+
+    Long countByHost(User host);
+    Long countByHostAndStatus(User host, PartyStatus status);
+
+    Page<Party> findByHost(User host, Pageable pageable);
+    Page<Party> findByHostAndStatus(User host, PartyStatus status, Pageable pageable);
 }

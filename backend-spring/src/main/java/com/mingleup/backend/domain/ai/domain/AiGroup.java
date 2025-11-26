@@ -30,19 +30,22 @@ public class AiGroup extends BaseTimeEntity {
     @Column(name = "group_name", nullable = false, length = 100)
     private String groupName;
 
+    @Column(name = "matching_reason", length = 500)
+    private String matchingReason;
+
     // --- 연관관계 ---
 
-    // 1. 그룹 멤버
-    @OneToMany(mappedBy = "aiGroup", cascade = CascadeType.ALL, orphanRemoval = true)
+    // [추가] 그룹에 속한 멤버들 (조회 편의성을 위해 양방향 매핑 추가)
+    @OneToMany(mappedBy = "aiGroup", cascade = CascadeType.ALL)
     private List<AiGroupMember> members = new ArrayList<>();
 
-    // 2. 그룹에 대한 후기
     @OneToMany(mappedBy = "aiGroup", cascade = CascadeType.PERSIST)
     private List<Review> reviews = new ArrayList<>();
 
     @Builder
-    public AiGroup(Party party, String groupName) {
+    public AiGroup(Party party, String groupName, String matchingReason) {
         this.party = party;
         this.groupName = groupName;
+        this.matchingReason = matchingReason;
     }
 }

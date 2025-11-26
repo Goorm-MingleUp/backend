@@ -1,8 +1,6 @@
 package com.mingleup.backend.domain.party.controller;
 
-import com.mingleup.backend.domain.party.domain.PartyCategory;
 import com.mingleup.backend.domain.party.dto.request.PartyCreateRequest;
-import com.mingleup.backend.domain.party.dto.request.PartyThumbnailUpdateRequest;
 import com.mingleup.backend.domain.party.dto.request.PartyUpdateRequest;
 import com.mingleup.backend.domain.party.dto.request.UpdatePartyThumbnailRequest;
 import com.mingleup.backend.domain.party.dto.response.HostQuestionResponse;

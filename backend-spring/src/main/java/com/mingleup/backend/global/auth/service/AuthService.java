@@ -1,4 +1,4 @@
-package com.mingleup.backend.global.auth.service; // [수정] 올바른 패키지 경로
+package com.mingleup.backend.global.auth.service;
 
 import com.mingleup.backend.domain.user.domain.Gender;
 import com.mingleup.backend.domain.user.domain.Role;
@@ -38,36 +38,36 @@ public class AuthService {
      * 카카오 로그인/회원가입 전체 프로세스
      * 1. 인가 코드로 카카오 액세스 토큰 받기
      * 2. 액세스 토큰으로 카카오 사용자 정보 받기
-     * 3. DB에서 사용자 조회 또는 신규 등록
+     * 3. DB에서 사용자 조회 또는 신규 등록 (토큰 저장 포함)
      * 4. MingleUp JWT 발급
      * @param code 카카오 인가 코드
      * @return MingleUp JWT와 사용자 정보가 담긴 DTO
      */
     public LoginResponse processKakaoLogin(String code) {
         // 1. 인가 코드로 액세스 토큰 받기
-        KakaoTokenResponse tokenResponse = getKakaoToken(code);
-        log.info("카카오 액세스 토큰 수신: {}", tokenResponse.getAccessToken());
+        KakaoTokenResponse tokenResponse = getKakaoTokenResponse(code);
+        String kakaoAccessToken = tokenResponse.getAccessToken();
+        log.info("카카오 액세스 토큰 수신 완료");
 
         // 2. 액세스 토큰으로 사용자 정보 받기
-        KakaoUserInfoResponse userInfo = getKakaoUserInfo(tokenResponse.getAccessToken());
+        KakaoUserInfoResponse userInfo = getKakaoUserInfo(kakaoAccessToken);
         log.info("카카오 사용자 정보 수신: {}", userInfo.getKakaoId());
 
-        // 3. 사용자 조회 또는 신규 등록 (isNewUser 값은 이제 사용 안함)
-        User user = saveOrUpdateUser(userInfo);
-        log.info("MingleUp 사용자 저장/조회: {}", user.getId());
+        // 3. 사용자 조회 또는 신규 등록 (Kakao Token 저장)
+        User user = saveOrUpdateUser(userInfo, kakaoAccessToken);
+        log.info("MingleUp 사용자 저장/조회 완료: {}", user.getId());
 
         // 4. MingleUp JWT 발급
         String jwtToken = jwtTokenProvider.createToken(user.getId(), user.getRole());
         log.info("MingleUp JWT 토큰 생성 완료");
 
-        // [수정] LoginResponse 생성자 변경 (isNewUser -> user.getId(), user.getName())
         return new LoginResponse(jwtToken, user.getId(), user.getName());
     }
 
     /**
      * (서버 to 서버) 카카오에 액세스 토큰 요청
      */
-    private KakaoTokenResponse getKakaoToken(String code) {
+    private KakaoTokenResponse getKakaoTokenResponse(String code) { // [수정] 메서드명 일치시킴
         String tokenUri = kakaoProperties.getTokenUri();
         String requestBody = "grant_type=authorization_code"
                 + "&client_id=" + kakaoProperties.getClientId()
@@ -100,13 +100,16 @@ public class AuthService {
 
     /**
      * 카카오 ID로 사용자를 조회하고, 없으면 새로 생성하여 저장
+     * (로그인 성공 시마다 카카오 토큰을 최신화합니다)
      */
-    public User saveOrUpdateUser(KakaoUserInfoResponse userInfo) {
+    public User saveOrUpdateUser(KakaoUserInfoResponse userInfo, String kakaoAccessToken) { // [수정] 파라미터 추가
         Optional<User> existingUser = userRepository.findByKakaoId(userInfo.getKakaoId());
 
         if (existingUser.isPresent()) {
-            log.debug("Existing user found: {}", existingUser.get().getId());
-            return existingUser.get();
+            User user = existingUser.get();
+            // [추가] 기존 유저 로그인 시 카카오 토큰 업데이트 (알림톡 전송용)
+            user.updateKakaoToken(kakaoAccessToken);
+            return user;
         }
 
         log.debug("New user. Saving to database.");
@@ -139,13 +142,16 @@ public class AuthService {
 
         User newUser = User.builder()
                 .kakaoId(userInfo.getKakaoId())
-                .name(account.getName()) // '이름'
-                .email(account.getEmail()) // '이메일' (null일 수 있음)
-                .profileImageUrl(userInfo.getProfileImageUrl()) // '프로필 사진' (null일 수 있음)
+                .name(account.getName())
+                .email(account.getEmail())
+                .profileImageUrl(userInfo.getProfileImageUrl())
                 .gender(gender)
                 .birthdate(birthdate)
-                .role(Role.PARTICIPANT) // 기본 역할
+                .role(Role.PARTICIPANT)
                 .build();
+
+        // [추가] 신규 유저 카카오 토큰 설정
+        newUser.updateKakaoToken(kakaoAccessToken);
 
         return userRepository.save(newUser);
     }

@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 @Getter
 @Setter
 public class KakaoProperties {
-    // Kakao
+    // Auth
     private String clientId;
     private String clientSecret;
     private String redirectUri;
@@ -21,4 +21,7 @@ public class KakaoProperties {
     private String userInfoUri;
     private String authUri;
 
+    // [추가] Notification (알림톡용)
+    private String adminKey;      // 카카오 어드민 키 (서버에서 발송 시 필요)
+    private String senderNumber;  // 발신 번호 (알림톡 필수)
 }

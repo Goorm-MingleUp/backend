@@ -65,7 +65,7 @@ public class PartyApplicationService {
         PartyApplication application = PartyApplication.builder()
                 .party(party)
                 .user(user)
-                .answerText(req.answer())
+                .answerText(req.answer()) // ✨ 단일 답변
                 .build();
 
         partyApplicationRepository.save(application);
@@ -78,7 +78,6 @@ public class PartyApplicationService {
      * 파티 신청 취소
      */
     public PartyApplicationCancelResponse cancelApplication(Long partyId, Long userId) {
-
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
