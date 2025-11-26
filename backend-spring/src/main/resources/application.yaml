@@ -13,6 +13,10 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/mingleup?serverTimezone=Asia/Seoul
     username: root
+    password: ${SPRING_DATASOURCE_PASSWORD}
+  messages:
+    encoding: UTF-8
+
   jpa:
     defer-datasource-initialization: true # Delay data.sql execution time to after DB initialization
     database-platform: org.hibernate.dialect.MySQLDialect # Use MYSQL dialect
