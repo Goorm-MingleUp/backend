@@ -3,6 +3,7 @@ package com.mingleup.backend.domain.host.service;
 import com.mingleup.backend.domain.application.domain.ApplicationStatus;
 import com.mingleup.backend.domain.application.domain.PartyApplication;
 import com.mingleup.backend.domain.application.repository.PartyApplicationRepository;
+import com.mingleup.backend.domain.host.dto.BulkUpdateApplicationStatusRequest;
 import com.mingleup.backend.domain.host.dto.HostDashboardResponse;
 import com.mingleup.backend.domain.host.dto.HostPartyApplicationResponse;
 import com.mingleup.backend.domain.host.dto.HostPartyResponse;
@@ -116,7 +117,31 @@ public class HostService {
         application.updateStatus(newStatus);
         // [변경] 여기서는 상태만 변경하고, 알림은 별도 API로 발송합니다.
     }
+    /**
+     * [신규] 참가 신청 일괄 승인/거절 (체크박스 처리용)
+     */
+    @Transactional
+    public void updateBulkApplicationStatus(Long hostUserId, BulkUpdateApplicationStatusRequest request) {
+        List<Long> applicationIds = request.getApplicationIds();
+        ApplicationStatus newStatus = request.getStatus();
 
+        // 1. ID 목록으로 신청서 일괄 조회
+        List<PartyApplication> applications = partyApplicationRepository.findAllById(applicationIds);
+
+        if (applications.size() != applicationIds.size()) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "일부 신청 정보를 찾을 수 없습니다.");
+        }
+
+        // 2. 권한 검증 및 상태 업데이트
+        for (PartyApplication app : applications) {
+            // 해당 신청서 파티의 호스트가 본인이 맞는지 확인
+            if (!app.getParty().getHost().getId().equals(hostUserId)) {
+                throw new CustomException(ErrorCode.FORBIDDEN, "권한이 없는 신청 내역(ID: " + app.getId() + ")이 포함되어 있습니다.");
+            }
+
+            app.updateStatus(newStatus);
+        }
+    }
     /**
      * [신규] 참가 결과 일괄 알림 발송 (버튼 클릭 시 실행)
      * 해당 파티의 '승인' 또는 '거절' 상태인 신청자들에게 알림을 보냅니다.

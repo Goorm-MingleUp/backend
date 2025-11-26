@@ -7,6 +7,7 @@ import com.mingleup.backend.domain.host.dto.*;
 import com.mingleup.backend.domain.host.service.HostService;
 import com.mingleup.backend.domain.party.domain.PartyStatus;
 import com.mingleup.backend.global.common.ApiResult;
+import com.mingleup.backend.global.common.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -25,6 +26,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import com.mingleup.backend.global.common.PageResponse; // [추가]
 
 import java.util.List;
 
@@ -87,25 +89,22 @@ public class HostController {
     }
 
     /**
-     * 호스트가 생성한 파티 목록 조회 API
+     * [수정] 호스트 생성 파티 전체 목록 조회 API (상태 필터 없음)
      */
     @Operation(
-            summary = "호스트 생성 파티 목록 조회",
+            summary = "호스트 생성 파티 전체 목록 조회",
             description = """
-            호스트가 자신이 생성한 파티 목록을 조회합니다. (대시보드 하단 리스트)
-            
-            **필터링:** `status` 파라미터로 파티 상태(`RECRUITING`, `CLOSED`, `COMPLETED` 등)를 필터링할 수 있습니다.
-            **페이징:** `page`, `size`, `sort` 파라미터를 지원합니다.
+            호스트가 자신이 생성한 **모든 파티**의 목록을 최신순으로 조회합니다.
+            (페이징 정보 간소화 적용)
             """,
             tags = {"Host"}
     )
     @ApiResponses({
             @ApiResponse(
                     responseCode = "200",
-                    description = "조회 성공",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = HostPartyResponse.class),
+                            schema = @Schema(implementation = PageResponse.class),
                             examples = @ExampleObject(value = """
                             {
                                 "success": true,
@@ -115,64 +114,63 @@ public class HostController {
                                     "content": [
                                         {
                                             "partyId": 10,
-                                            "title": "이번 주말 보드게임 하실 분",
-                                            "partyImageUrl": "https://example.com/img/boardgame.jpg",
-                                            "partyDatetime": "2025-12-01T14:00:00",
-                                            "locationName": "강남역 보드게임카페",
+                                            "title": "주말 보드게임",
                                             "status": "RECRUITING",
-                                            "minParticipants": 2,
-                                            "maxParticipants": 4,
-                                            "entryFee": 5000,
-                                            "createdAt": "2025-11-15T10:00:00"
-                                        },
-                                        {
-                                            "partyId": 9,
-                                            "title": "직장인 풋살 모임",
-                                            "partyImageUrl": "https://example.com/img/soccer.jpg",
-                                            "partyDatetime": "2025-11-30T19:00:00",
-                                            "locationName": "용산 아이파크몰",
-                                            "status": "CLOSED",
-                                            "minParticipants": 10,
-                                            "maxParticipants": 12,
-                                            "entryFee": 10000,
-                                            "createdAt": "2025-11-10T09:00:00"
+                                            "createdAt": "2025-11-20T10:00:00"
                                         }
                                     ],
-                                    "pageable": {
-                                        "pageNumber": 0,
-                                        "pageSize": 10,
-                                        "sort": { "sorted": true, "unsorted": false, "empty": false },
-                                        "offset": 0,
-                                        "paged": true,
-                                        "unpaged": false
-                                    },
-                                    "totalPages": 1,
-                                    "totalElements": 2,
-                                    "last": true,
-                                    "size": 10,
-                                    "number": 0,
-                                    "sort": { "sorted": true, "unsorted": false, "empty": false },
-                                    "numberOfElements": 2,
-                                    "first": true,
-                                    "empty": false
+                                    "pageNumber": 0,
+                                    "pageSize": 10,
+                                    "totalElements": 15
                                 }
                             }
                             """)
                     )
-            ),
-            @ApiResponse(responseCode = "401", description = "인증 실패")
+            )
     })
     @GetMapping("/parties")
-    public ResponseEntity<ApiResult<Page<HostPartyResponse>>> getHostParties(
+    public ResponseEntity<ApiResult<PageResponse<HostPartyResponse>>> getAllHostParties( // [수정] 반환 타입 변경
+         Authentication authentication,
+         @RequestParam(defaultValue = "0") int page,
+         @RequestParam(defaultValue = "10") int size,
+         @RequestParam(required = false) String sort
+    ) {
+        Pageable pageable = createPageable(page, size, sort);
+        Long userId = Long.parseLong(authentication.getName());
+
+        // status = null -> 전체 조회
+        Page<HostPartyResponse> parties = hostService.getHostParties(userId, null, pageable);
+
+        // [수정] PageResponse로 감싸서 반환
+        return ResponseEntity.ok(ApiResult.onSuccess(PageResponse.of(parties)));
+    }
+
+    /**
+     * [신규] 호스트 생성 파티 상태별 목록 조회 API (분리됨)
+     */
+    @Operation(
+            summary = "호스트 생성 파티 상태별 목록 조회",
+            description = """
+            호스트가 자신이 생성한 파티를 **상태별(RECRUITING, CLOSED, COMPLETED)**로 필터링하여 조회합니다.
+            """,
+            tags = {"Host"}
+    )
+    @GetMapping("/parties/status/{status}")
+    public ResponseEntity<ApiResult<PageResponse<HostPartyResponse>>> getHostPartiesByStatus(
             Authentication authentication,
-            @RequestParam(required = false) PartyStatus status,
+            @Parameter(description = "조회할 파티 상태", required = true, example = "RECRUITING")
+            @PathVariable PartyStatus status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String sort
     ) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Pageable pageable = createPageable(page, size, sort);
         Long userId = Long.parseLong(authentication.getName());
-        return ResponseEntity.ok(ApiResult.onSuccess(hostService.getHostParties(userId, status, pageable)));
+
+        // 특정 상태 조회
+        Page<HostPartyResponse> parties = hostService.getHostParties(userId, status, pageable);
+
+        return ResponseEntity.ok(ApiResult.onSuccess(PageResponse.of(parties)));
     }
 
     /**
@@ -319,6 +317,41 @@ public class HostController {
         hostService.updateApplicationStatus(hostUserId, applicationId, request.getStatus());
         return ResponseEntity.ok(ApiResult.onSuccess());
     }
+    /**
+     * [신규] 참가 신청 일괄 승인/거절 API (체크박스 처리용)
+     */
+    @Operation(
+            summary = "참가 신청 일괄 승인/거절 (다건)",
+            description = """
+            여러 개의 신청서를 선택하여(체크박스 등) 한 번에 승인하거나 거절합니다.
+            하나라도 본인의 파티 신청이 아니면 에러가 발생합니다.
+            """,
+            tags = {"Host"}
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "일괄 처리 성공"),
+            @ApiResponse(responseCode = "400", description = "입력값 오류"),
+            @ApiResponse(responseCode = "403", description = "권한 없는 신청 포함됨")
+    })
+    @PatchMapping("/applications/status")
+    public ResponseEntity<ApiResult<Void>> updateBulkApplicationStatus(
+            Authentication authentication,
+            @Valid @RequestBody BulkUpdateApplicationStatusRequest request
+    ) {
+        Long hostUserId = Long.parseLong(authentication.getName());
+        hostService.updateBulkApplicationStatus(hostUserId, request);
+        return ResponseEntity.ok(ApiResult.onSuccess());
+    }
+
+    @PostMapping("/parties/{partyId}/notifications/result")
+    public ResponseEntity<ApiResult<Void>> sendApplicationResultNotifications(
+            Authentication authentication,
+            @PathVariable Long partyId
+    ) {
+        Long hostUserId = Long.parseLong(authentication.getName());
+        hostService.sendApplicationResultNotifications(hostUserId, partyId);
+        return ResponseEntity.ok(ApiResult.onSuccess());
+    }
 
     /**
      * AI 매칭 실행 API (매칭만 수행)
@@ -457,5 +490,20 @@ public class HostController {
         Long hostUserId = Long.parseLong(authentication.getName());
         hostService.sendReviewRequestNotifications(hostUserId, partyId);
         return ResponseEntity.ok(ApiResult.onSuccess());
+    }
+    // [Helper] Pageable 생성 메서드
+    private Pageable createPageable(int page, int size, String sort) {
+        Sort defaultSort = Sort.by(Sort.Direction.DESC, "createdAt");
+        if (sort != null && !sort.isEmpty()) {
+            try {
+                String[] sortParams = sort.split(",");
+                Sort.Direction direction = (sortParams.length > 1 && sortParams[1].equalsIgnoreCase("desc")) ?
+                        Sort.Direction.DESC : Sort.Direction.ASC;
+                return PageRequest.of(page, size, Sort.by(direction, sortParams[0]));
+            } catch (Exception e) {
+                return PageRequest.of(page, size, defaultSort);
+            }
+        }
+        return PageRequest.of(page, size, defaultSort);
     }
 }

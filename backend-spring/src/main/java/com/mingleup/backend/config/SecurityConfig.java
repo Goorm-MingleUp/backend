@@ -46,7 +46,8 @@ public class SecurityConfig {
                                 "/",
                                 "/error",
                                 "/api/v1/auth/**", // 카카오 로그인 관련 경로는 모두 허용
-                                "/api/v1/users/**" // 유저 관련 경로는 모두 허용
+                                "/api/v1/users/**", // 유저 관련 경로는 모두 허용
+                                "/api/v1/parties/**" // 유저 관련 경로는 모두 허용
                         ).permitAll()
 
                         // ✅ Swagger 문서 및 공개 경로 허용

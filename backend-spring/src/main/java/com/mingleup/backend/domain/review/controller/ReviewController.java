@@ -36,10 +36,13 @@ public class ReviewController {
      * 후기 작성 API (일괄/단건 공용)
      */
     @Operation(
-            summary = "후기 작성 (일괄/단건)",
+            summary = "후기 작성 (일괄/단건) - 등록/수정",
             description = """
-            파티 종료 후 여러 종류의 후기(파티, 호스트, 참가자, AI그룹)를 한 번에 작성합니다.
-            하나라도 실패하면 모두 롤백됩니다 (All or Nothing).
+            여러 개의 후기를 한 번의 요청으로 생성하거나 수정합니다. (Upsert Logic)
+            
+            - **신규 작성**: 해당 대상에 대한 후기가 없으면 새로 등록합니다.
+            - **수정**: 이미 작성한 후기가 있다면 내용을 **수정(Update)**합니다.
+            - 하나라도 처리에 실패하면 전체 롤백됩니다 (Transaction).
             
             **조건:** 해당 파티에 `ATTENDED` (참석 완료) 상태여야 합니다.
             """,
@@ -48,7 +51,7 @@ public class ReviewController {
     @ApiResponses({
             @ApiResponse(
                     responseCode = "200",
-                    description = "작성 성공",
+                    description = "작성 또는 수정 성공",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = CreateReviewResponse.class),
@@ -79,7 +82,7 @@ public class ReviewController {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "중복 작성 등 입력 오류",
+                    description = "입력 값 오류 (ID 누락, 평점 범위 오류 등)",
                     content = @Content(
                             mediaType = "application/json",
                             examples = @ExampleObject(value = """
@@ -87,12 +90,12 @@ public class ReviewController {
                                 "success": false,
                                 "code": "COMMON4001",
                                 "message": "유효하지 않은 입력 값입니다.",
-                                "result": "해당 모임에서 이 유저에 대한 후기를 이미 작성했습니다."
+                                "result": "HOST 후기에는 revieweeId가 필수입니다."
                             }
                             """)
                     )
             ),
-            @ApiResponse(responseCode = "403", description = "권한 없음 (미참석)")
+            @ApiResponse(responseCode = "403", description = "권한 없음 (미참석 등)")
     })
     @PostMapping("/bulk")
     public ResponseEntity<ApiResult<List<CreateReviewResponse>>> createBulkReviews(
