@@ -18,7 +18,7 @@ public record PartyListResponse(
         int currentPage,
 
         @Schema(description = "파티 요약 목록")
-        List<PartySummary> result
+        List<PartySummary> parties
 ) {
 
         @Schema(description = "파티 요약 정보 DTO")
@@ -54,7 +54,7 @@ public record PartyListResponse(
                 return PartyListResponse.builder()
                         .totalCount(totalCount)
                         .currentPage(currentPage)
-                        .result(parties.stream()
+                        .parties(parties.stream()
                                 .map(PartySummary::from)
                                 .collect(Collectors.toList()))
                         .build();

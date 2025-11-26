@@ -2,6 +2,7 @@ package com.mingleup.backend.domain.party.controller;
 
 import com.mingleup.backend.domain.party.dto.response.PartyCategoryResponse;
 import com.mingleup.backend.domain.party.service.PartyCategoryService;
+import com.mingleup.backend.global.common.ApiResult;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,10 +18,8 @@ public class PartyCategoryController {
     private final PartyCategoryService partyCategoryService;
 
     @GetMapping
-    public ResponseEntity<List<PartyCategoryResponse>> getPartyCategories() {
-
+    public ApiResult<List<PartyCategoryResponse>> getPartyCategories() {
         List<PartyCategoryResponse> categories = partyCategoryService.getCategories();
-
-        return ResponseEntity.ok(categories);
+        return ApiResult.onSuccess(categories);
     }
 }

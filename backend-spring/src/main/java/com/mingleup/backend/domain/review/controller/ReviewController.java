@@ -39,13 +39,12 @@ public class ReviewController {
 
     @Operation(summary = "파티 후기 목록 조회")
     @GetMapping("/{partyId}/reviews")
-    public ResponseEntity<PartyReviewListResponse> getPartyReviews(
+    public ApiResult<PartyReviewListResponse> getPartyReviews(
             @PathVariable Long partyId
     ) {
-        return ResponseEntity.ok(reviewService.getReviewsByParty(partyId));
+        PartyReviewListResponse response = reviewService.getReviewsByParty(partyId);
+        return ApiResult.onSuccess(response);
     }
-
-
 
     /**
      * 후기 작성 API (일괄/단건 공용)

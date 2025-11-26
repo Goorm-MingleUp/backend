@@ -10,6 +10,7 @@ import com.mingleup.backend.domain.party.dto.response.PartyListResponse;
 import com.mingleup.backend.domain.party.service.PartyCategoryService;
 import com.mingleup.backend.domain.party.service.PartyService;
 import com.mingleup.backend.domain.wishlist.service.WishlistService;
+import com.mingleup.backend.global.common.ApiResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -39,7 +40,7 @@ public class PartyController {
                 """
     )
     @GetMapping
-    public PartyListResponse list(
+    public ApiResult<PartyListResponse> list(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "12") int limit,
             @RequestParam(required = false) String search,
@@ -47,16 +48,17 @@ public class PartyController {
             @RequestParam(required = false) String category,
             @RequestParam(name = "sort_by", required = false) String sortBy
     ) {
-        return partyService.getParties(page, limit, search, status, category, sortBy);
+        PartyListResponse response = partyService.getParties(page, limit, search, status, category, sortBy);
+        return ApiResult.onSuccess(response);
     }
 
     @Operation(
             summary = "파티 상세 조회",
             description = "단일 파티 상세 정보를 조회합니다."
     )
-    @GetMapping("/{partyId}")
-    public PartyDetailResponse detail(@PathVariable Long partyId) {
-        return partyService.getParty(partyId);
+    public ApiResult<PartyDetailResponse> detail(@PathVariable Long partyId) {
+        PartyDetailResponse response = partyService.getParty(partyId);
+        return ApiResult.onSuccess(response);
     }
 
     @Operation(
@@ -67,11 +69,12 @@ public class PartyController {
                 """
     )
     @PostMapping
-    public PartyCreateResponse create(
+    public ApiResult<PartyCreateResponse> create(
             @RequestAttribute("userId") Long userId,
             @RequestBody PartyCreateRequest req
     ) {
-        return partyService.createParty(userId, req);
+        PartyCreateResponse response = partyService.createParty(userId, req);
+        return ApiResult.onSuccess(response);
     }
 
     @Operation(
@@ -83,13 +86,13 @@ public class PartyController {
     )
 
     @PutMapping("/{partyId}")
-    public ResponseEntity<Void> update(
+    public ApiResult<Void> update(
             @PathVariable Long partyId,
             @RequestAttribute("userId") Long userId,
             @RequestBody PartyUpdateRequest req
     ) {
         partyService.updateParty(partyId, userId, req);
-        return ResponseEntity.noContent().build(); // 204
+        return ApiResult.onSuccess(); // CUD 성공
     }
 
     @Operation(
@@ -98,27 +101,19 @@ public class PartyController {
     )
 
     @GetMapping("/{partyId}/question")
-    public HostQuestionResponse getHostQuestion(@PathVariable Long partyId) {
-        return partyService.getHostQuestion(partyId);
+    public ApiResult<HostQuestionResponse> getHostQuestion(@PathVariable Long partyId) {
+        HostQuestionResponse response = partyService.getHostQuestion(partyId);
+        return ApiResult.onSuccess(response);
     }
 
     @Operation(summary = "파티 썸네일 이미지 URL 업데이트")
     @PatchMapping("/{partyId}/thumbnail")
-    public ResponseEntity<Map<String, Object>> updatePartyThumbnail(
-           @RequestAttribute("userId") Long userId,
+    public ApiResult<Void> updatePartyThumbnail(
+            @RequestAttribute("userId") Long userId,
             @PathVariable Long partyId,
             @RequestBody UpdatePartyThumbnailRequest request
     ) {
-
         partyService.updatePartyThumbnail(partyId, userId, request);
-
-        return ResponseEntity.ok(
-                Map.of(
-                        "isSuccess", true,
-                        "code", "COMMON200",
-                        "message", "파티 썸네일이 수정되었습니다.",
-                        "result", ""
-                )
-        );
+        return ApiResult.onSuccess();
     }
 }
