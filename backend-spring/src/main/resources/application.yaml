@@ -37,8 +37,7 @@ cloud:
       secret-key: ${AWS_SECRET_ACCESS_KEY}
     s3:
       bucket: mingleup-s3-bucket
-    region:
-      static: ap-northeast-2
+    region: ap-northeast-2
     stack:
       auto: false
 
@@ -49,12 +48,10 @@ jwt:
 
   # --- 카카오 로그인 설정 추가 ---
 kakao:
-  client-id: "5bc58dc97e51205b93b0e4f32ace1d4a"
-  client-secret: "0sTsA1y0paSXrVROeFo4xv3FR6UsbsAe"
-  # 로컬 개발용
-  redirect-uri: "http://localhost:8080/api/v1/auth/kakao/callback" # AuthController에 설정된 콜백 URL
+  client-id: ${KAKAO_CLIENT_ID}
+  client-secret: ${KAKAO_CLIENT_SECRET}
   # 배포용
-  #redirect-uri: ${BASE_URL}/api/v1/auth/kakao/callbac
+  redirect-uri: '${BASE_URL}/api/v1/auth/kakao/callback'
   token-uri: "https://kauth.kakao.com/oauth/token"
   user-info-uri: "https://kapi.kakao.com/v2/user/me"
   auth-uri: "https://kauth.kakao.com/oauth/authorize"
