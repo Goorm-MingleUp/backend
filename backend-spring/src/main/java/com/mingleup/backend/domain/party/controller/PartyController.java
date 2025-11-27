@@ -56,7 +56,7 @@ public class PartyController {
             summary = "파티 상세 조회",
             description = "단일 파티 상세 정보를 조회합니다."
     )
-    @GetMapping
+    @GetMapping("/{partyId}")
     public ApiResult<PartyDetailResponse> detail(@PathVariable Long partyId) {
         PartyDetailResponse response = partyService.getParty(partyId);
         return ApiResult.onSuccess(response);
