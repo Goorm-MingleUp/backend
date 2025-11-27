@@ -71,15 +71,21 @@ public class SecurityConfig {
     }
 
     /**
-     * (임시) 개발용 CORS 설정
+     * CORS 설정 (프론트엔드 연결 핵심!)
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(List.of("*")); // 모든 오리진 허용
+
+        // [수정] 명시적으로 허용할 주소를 적어줍니다.
+        config.setAllowedOriginPatterns(List.of(
+                "http://localhost:3000",               // 로컬 개발용 (프론트 팀원이 집에서 테스트할 때)
+                "https://mingleup-frontend.vercel.app" // ★ 버셀 실제 배포 주소 (여기가 핵심!)
+        ));
+
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
-        config.setAllowCredentials(true);
+        config.setAllowCredentials(true); // 쿠키, 세션 등 인증 정보 허용
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
