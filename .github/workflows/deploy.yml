@@ -63,6 +63,17 @@ jobs:
             MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}
             MYSQL_USER=${{ secrets.MYSQL_USER }}
             MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}
+            
+            # S3 설정 (아까 추가함)
+            AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            AWS_S3_BUCKET=${{ secrets.AWS_S3_BUCKET }}
+            
+            # ▼▼▼ [여기 추가!] JWT & Kakao 설정 ▼▼▼
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            KAKAO_CLIENT_ID=${{ secrets.KAKAO_CLIENT_ID }}
+            KAKAO_CLIENT_SECRET=${{ secrets.KAKAO_CLIENT_SECRET }}
+            BASE_URL=${{ secrets.BASE_URL }}
             EOF
             
             cat > ./home/ec2-user/mysql/conf.d << EOF

@@ -44,7 +44,7 @@ cloud:
 # This file should be used as gitignore in real work
 jwt:
   secret: ${JWT_SECRET}
-  expiration-in-ms: '36000000'
+  expiration-in-ms: '360000000'
 
   # --- 카카오 로그인 설정 추가 ---
 kakao:

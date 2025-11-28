@@ -23,9 +23,21 @@ services:
     depends_on:
       - mingleup-db
     environment:
+      # 1. DB 설정 (기존)
       SPRING_DATASOURCE_URL: jdbc:mysql://mingleup-db:3306/${MYSQL_DATABASE}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=utf8
       SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      
+      # 2. AWS S3 설정 (추가)
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET}
+      
+      # 3. JWT & Kakao & BaseURL 설정 (추가)
+      JWT_SECRET: ${JWT_SECRET}
+      KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
+      KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET}
+      BASE_URL: ${BASE_URL}
     ports:
       - "8080:8080"
     networks:
