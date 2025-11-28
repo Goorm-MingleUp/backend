@@ -55,3 +55,6 @@ kakao:
   token-uri: "https://kauth.kakao.com/oauth/token"
   user-info-uri: "https://kapi.kakao.com/v2/user/me"
   auth-uri: "https://kauth.kakao.com/oauth/authorize"
+
+app:
+  frontend-base-url: ${FRONTEND_BASE_URL}
