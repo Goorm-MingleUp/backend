@@ -95,8 +95,10 @@ public class AuthController {
     @GetMapping("/kakao/callback")
     public ResponseEntity<Void> handleKakaoCallback(@RequestParam("code") String code) {
         log.info("카카오 인가 코드 수신: {}", code);
-        String frontendRedirectUrl = "http://localhost:3000/auth-redirect";
-        String errorUrl = "http://localhost:3000/login-error";
+//        String frontendRedirectUrl = "http://localhost:3000/auth-redirect";
+//        String errorUrl = "http://localhost:3000/login-error";
+        String frontendRedirectUrl = "https://mingleup-frontend.vercel.app/auth-redirect";
+        String errorUrl = "https://mingleup-frontend.vercel.app/login-error";
 
         try {
             // AuthService를 통해 카카오 로그인 처리 및 MingleUp JWT 발급
