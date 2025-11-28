@@ -37,7 +37,11 @@ public class ReviewController {
 
     private final ReviewService reviewService;
 
-    @Operation(summary = "파티 후기 목록 조회")
+    @Operation(
+            summary = "파티 후기 목록 조회",
+            description = "특정 파티의 후기 목록을 조회합니다. (로그인 불필요)",
+            security = {}
+    )
     @GetMapping("/{partyId}/reviews")
     public ApiResult<PartyReviewListResponse> getPartyReviews(
             @PathVariable Long partyId
