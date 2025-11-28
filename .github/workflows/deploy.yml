@@ -74,6 +74,7 @@ jobs:
             KAKAO_CLIENT_ID=${{ secrets.KAKAO_CLIENT_ID }}
             KAKAO_CLIENT_SECRET=${{ secrets.KAKAO_CLIENT_SECRET }}
             BASE_URL=${{ secrets.BASE_URL }}
+            FRONTEND_BASE_URL=${{ secrets.FRONTEND_BASE_URL }}
             EOF
             
             cat > ./home/ec2-user/mysql/conf.d << EOF
