@@ -1,8 +1,13 @@
 package com.mingleup.backend.domain.wishlist.dto.response;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
-public record WishlistResponse(
-        String status,
-        int wish_count
-) {}
+@Getter
+@AllArgsConstructor
+@NoArgsConstructor
+public class WishlistResponse {
+    private String status;    // "added" or "removed"
+    private int wishCount;    // 해당 파티의 총 찜 개수
+}

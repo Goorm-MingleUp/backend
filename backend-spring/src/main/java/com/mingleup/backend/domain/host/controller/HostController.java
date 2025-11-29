@@ -342,16 +342,63 @@ public class HostController {
         hostService.updateBulkApplicationStatus(hostUserId, request);
         return ResponseEntity.ok(ApiResult.onSuccess());
     }
-
-    @PostMapping("/parties/{partyId}/notifications/result")
-    public ResponseEntity<ApiResult<Void>> sendApplicationResultNotifications(
-            Authentication authentication,
-            @PathVariable Long partyId
-    ) {
-        Long hostUserId = Long.parseLong(authentication.getName());
-        hostService.sendApplicationResultNotifications(hostUserId, partyId);
-        return ResponseEntity.ok(ApiResult.onSuccess());
-    }
+//    /**
+//     * 참가 결과 일괄 알림 발송 API
+//     * [POST] /api/v1/host/parties/{partyId}/notifications/result
+//     */
+//    @Operation(
+//            summary = "참가 결과 일괄 알림 발송",
+//            description = """
+//            해당 파티의 **승인(APPROVED)** 및 **거절(REJECTED)**된 신청자들에게 결과 알림톡을 일괄 전송합니다.
+//
+//            - **사용 시점**: 호스트가 신청자들의 승인/거절 처리를 마친 후(또는 중간중간) 결과를 통보하고 싶을 때 사용합니다.
+//            - **대상**: 상태가 `APPROVED` 또는 `REJECTED`인 모든 신청자.
+//            """,
+//            tags = {"Host"}
+//    )
+//    @ApiResponses({
+//            @ApiResponse(
+//                    responseCode = "200",
+//                    description = "발송 성공",
+//                    content = @Content(
+//                            mediaType = "application/json",
+//                            examples = @ExampleObject(value = """
+//                            {
+//                                "success": true,
+//                                "code": "COMMON200",
+//                                "message": "성공입니다.",
+//                                "result": null
+//                            }
+//                            """)
+//                    )
+//            ),
+//            @ApiResponse(
+//                    responseCode = "400",
+//                    description = "알림을 보낼 대상이 없음 (모두 PENDING 상태이거나 신청자가 없음)",
+//                    content = @Content(
+//                            mediaType = "application/json",
+//                            examples = @ExampleObject(value = """
+//                            {
+//                                "success": false,
+//                                "code": "COMMON4001",
+//                                "message": "유효하지 않은 입력 값입니다.",
+//                                "result": "알림을 보낼 대상이 없습니다."
+//                            }
+//                            """)
+//                    )
+//            ),
+//            @ApiResponse(responseCode = "403", description = "권한 없음 (본인의 파티가 아님)"),
+//            @ApiResponse(responseCode = "404", description = "파티를 찾을 수 없음")
+//    })
+//    @PostMapping("/parties/{partyId}/notifications/result")
+//    public ResponseEntity<ApiResult<Void>> sendApplicationResultNotifications(
+//            Authentication authentication,
+//            @PathVariable Long partyId
+//    ) {
+//        Long hostUserId = Long.parseLong(authentication.getName());
+//        hostService.sendApplicationResultNotifications(hostUserId, partyId);
+//        return ResponseEntity.ok(ApiResult.onSuccess());
+//    }
 
     /**
      * AI 매칭 실행 API (매칭만 수행)

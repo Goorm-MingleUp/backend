@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -77,6 +78,8 @@ public class AuthController {
         return new ResponseEntity<>(headers, HttpStatus.FOUND);
     }
 
+    @Value("${app.frontend-base-url}")
+    private String frontendBaseUrl;
     /**
      * 카카오 로그인 콜백 처리
      * @param code 카카오가 발급한 인가 코드
@@ -95,9 +98,10 @@ public class AuthController {
     @GetMapping("/kakao/callback")
     public ResponseEntity<Void> handleKakaoCallback(@RequestParam("code") String code) {
         log.info("카카오 인가 코드 수신: {}", code);
-        String frontendRedirectUrl = "http://localhost:3000/auth-redirect";
-        String errorUrl = "http://localhost:3000/login-error";
-
+//        String frontendRedirectUrl = "http://localhost:3000/auth-redirect";
+//        String errorUrl = "http://localhost:3000/login-error";
+        String frontendRedirectUrl = frontendBaseUrl + "/auth-redirect";
+        String errorUrl = frontendBaseUrl + "/login-error";
         try {
             // AuthService를 통해 카카오 로그인 처리 및 MingleUp JWT 발급
             LoginResponse loginResponse = authService.processKakaoLogin(code);

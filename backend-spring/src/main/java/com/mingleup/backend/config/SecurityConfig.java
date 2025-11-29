@@ -1,101 +1,92 @@
 package com.mingleup.backend.config;
 
-import com.mingleup.backend.global.auth.JwtAuthenticationFilter; // [수정] import 추가
+import com.mingleup.backend.global.auth.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod; // [추가] HttpMethod 사용을 위해 필요
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter; // [수정] import 추가
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.cors.CorsConfigurationSource;
 
 import java.util.List;
 
-/**
- * Spring Security 설정
- */
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    // [수정] JWT 필터를 주입받습니다.
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // 1. CSRF, Form Login, HTTP Basic 비활성화
                 .csrf(csrf -> csrf.disable())
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable())
 
-                // 2. 세션 정책: STATELESS (JWT 사용)
+                // 세션 정책: STATELESS (JWT 사용)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                // 3. URL별 권한 설정
+                // URL별 권한 설정
                 .authorizeHttpRequests(auth -> auth
-                        // --- 인증 없이 접근 허용 ---
+                        // 1. 인증 없이 접근 허용 (로그인, 유저 조회, 파티 조회 등)
                         .requestMatchers(
                                 "/",
                                 "/error",
-                                "/api/v1/auth/**", // 카카오 로그인 관련 경로는 모두 허용
-                                "/api/v1/users/**", // 유저 관련 경로는 모두 허용
-                                "/api/v1/parties/**" // 유저 관련 경로는 모두 허용
+                                "/api/v1/auth/**",
+                                "/api/v1/users/**",
+                                "/api/v1/parties/**"
                         ).permitAll()
 
-                        // ✅ Swagger 문서 및 공개 경로 허용
+                        // 2. Swagger 문서 관련 경로 허용
                         .requestMatchers(
                                 "/swagger-ui/**",
                                 "/swagger-resources/**",
                                 "/v3/api-docs/**",
                                 "/webjars/**"
                         ).permitAll()
+
+                        // 3. [핵심] 후기 관련: GET 요청만 허용, POST 등은 인증 필요
+                        // 이렇게 하면 '/api/v1/reviews/bulk' (POST)는 자동으로 인증이 걸립니다.
+                        .requestMatchers(HttpMethod.GET, "/api/v1/reviews/**").permitAll()
+
+                        // 4. 나머지 경로는 모두 인증 필요
                         .anyRequest().authenticated()
                 )
 
-
-                // 4. [수정] JWT 필터 추가 (UsernamePasswordAuthenticationFilter 전에 실행)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
-        // 5. CORS 설정 (개발 편의를 위해 임시로 모두 허용)
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()));
 
         return http.build();
     }
 
-    /**
-     * CORS 설정 (프론트엔드 연결 핵심!)
-     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // [수정] 명시적으로 허용할 주소를 적어줍니다.
         config.setAllowedOriginPatterns(List.of(
-                "http://localhost:3000",               // 로컬 개발용 (프론트 팀원이 집에서 테스트할 때)
-                "https://mingleup-frontend.vercel.app" // ★ 버셀 실제 배포 주소 (여기가 핵심!)
+                "http://localhost:3000",
+                "https://mingleup-frontend.vercel.app"
         ));
 
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
-        config.setAllowCredentials(true); // 쿠키, 세션 등 인증 정보 허용
+        config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
     }
 
-    /**
-     * (참고) MingleUp은 카카오 로그인을 사용하므로 당장 BCrypt는 필요 없으나,
-     * Spring Security는 PasswordEncoder 빈을 요구하므로 생성해 둡니다.
-     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
