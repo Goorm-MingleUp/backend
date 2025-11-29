@@ -142,33 +142,33 @@ public class HostService {
             app.updateStatus(newStatus);
         }
     }
-    /**
-     * [신규] 참가 결과 일괄 알림 발송 (버튼 클릭 시 실행)
-     * 해당 파티의 '승인' 또는 '거절' 상태인 신청자들에게 알림을 보냅니다.
-     */
-    @Transactional(readOnly = true)
-    public void sendApplicationResultNotifications(Long hostUserId, Long partyId) {
-        Party party = partyRepository.findById(partyId)
-                .orElseThrow(() -> new CustomException(ErrorCode.INTERNAL_SERVER_ERROR, "파티를 찾을 수 없습니다."));
-
-        if (!party.getHost().getId().equals(hostUserId)) {
-            throw new CustomException(ErrorCode.FORBIDDEN, "권한이 없습니다.");
-        }
-
-        // 승인(APPROVED) 또는 거절(REJECTED)된 신청자 모두 조회
-        List<PartyApplication> targetApplications = partyApplicationRepository.findAllByPartyAndStatusIn(
-                party, Arrays.asList(ApplicationStatus.APPROVED, ApplicationStatus.REJECTED)
-        );
-
-        if (targetApplications.isEmpty()) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "알림을 보낼 대상(승인/거절된 신청자)이 없습니다.");
-        }
-
-        // 알림 발송
-        for (PartyApplication app : targetApplications) {
-            notificationService.sendApplicationResultNotification(app.getUser(), party, app.getStatus());
-        }
-    }
+//    /**
+//     * [신규] 참가 결과 일괄 알림 발송 (버튼 클릭 시 실행)
+//     * 해당 파티의 '승인' 또는 '거절' 상태인 신청자들에게 알림을 보냅니다.
+//     */
+//    @Transactional(readOnly = true)
+//    public void sendApplicationResultNotifications(Long hostUserId, Long partyId) {
+//        Party party = partyRepository.findById(partyId)
+//                .orElseThrow(() -> new CustomException(ErrorCode.INTERNAL_SERVER_ERROR, "파티를 찾을 수 없습니다."));
+//
+//        if (!party.getHost().getId().equals(hostUserId)) {
+//            throw new CustomException(ErrorCode.FORBIDDEN, "권한이 없습니다.");
+//        }
+//
+//        // 승인(APPROVED) 또는 거절(REJECTED)된 신청자 모두 조회
+//        List<PartyApplication> targetApplications = partyApplicationRepository.findAllByPartyAndStatusIn(
+//                party, Arrays.asList(ApplicationStatus.APPROVED, ApplicationStatus.REJECTED)
+//        );
+//
+//        if (targetApplications.isEmpty()) {
+//            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "알림을 보낼 대상(승인/거절된 신청자)이 없습니다.");
+//        }
+//
+//        // 알림 발송
+//        for (PartyApplication app : targetApplications) {
+//            notificationService.sendApplicationResultNotification(app.getUser(), party, app.getStatus());
+//        }
+//    }
     /**
      * [신규] 후기 작성 요청 일괄 알림 발송
      * - 대상: 파티에 '참석 완료(ATTENDED)'한 모든 참가자
