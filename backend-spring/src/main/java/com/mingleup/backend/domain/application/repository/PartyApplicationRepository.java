@@ -46,4 +46,14 @@ public interface PartyApplicationRepository extends JpaRepository<PartyApplicati
     List<PartyApplication> findAllByPartyAndStatus(Party party, ApplicationStatus status);
 
     List<PartyApplication> findAllByPartyAndStatusIn(Party party, Collection<ApplicationStatus> statuses);
+
+    List<PartyApplication> findByUserAndStatusOrderByAppliedAtDesc(User user, ApplicationStatus status);
+
+    List<PartyApplication> findByPartyInAndStatus(List<Party> parties, ApplicationStatus status);
+
+    List<PartyApplication> findTop20ByPartyAndStatusOrderByAppliedAtDesc(
+            Party party,
+            ApplicationStatus status
+    );
+
 }

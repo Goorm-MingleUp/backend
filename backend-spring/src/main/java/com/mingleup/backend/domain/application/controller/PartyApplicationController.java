@@ -1,9 +1,6 @@
 package com.mingleup.backend.domain.application.controller;
 
-import com.mingleup.backend.domain.application.dto.MyApplicationResponse; // [추가]
-import com.mingleup.backend.domain.application.dto.PartyApplicationCancelResponse;
-import com.mingleup.backend.domain.application.dto.PartyApplicationRequest;
-import com.mingleup.backend.domain.application.dto.PartyApplicationResponse;
+import com.mingleup.backend.domain.application.dto.*;
 import com.mingleup.backend.domain.application.service.PartyApplicationService; // [추가]
 import com.mingleup.backend.global.common.ApiResult; // [추가]
 import io.swagger.v3.oas.annotations.Operation; // [추가]
@@ -154,4 +151,17 @@ public class PartyApplicationController {
         PartyApplicationCancelResponse response = partyApplicationService.cancelApplication(partyId, userId);
         return ResponseEntity.ok(response);
     }
+
+    @Operation(
+            summary = "파티 참석자 전체 조회",
+            description = "특정 파티에 승인된 참석자 전체 목록을 조회합니다."
+    )
+    @GetMapping("/api/v1/parties/{partyId}/attendees")
+    public ResponseEntity<ApiResult<PartyAttendeesResponse>> getAttendees(
+            @PathVariable Long partyId
+    ) {
+        PartyAttendeesResponse response = partyApplicationService.getPartyAttendees(partyId);
+        return ResponseEntity.ok(ApiResult.onSuccess(response));
+    }
+
 }

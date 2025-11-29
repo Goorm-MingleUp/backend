@@ -145,7 +145,7 @@ public class User extends BaseTimeEntity {
         this.avgRating = newRating;
     }
 
-    public void updateProfileImage(String newProfileImageUrl) { this.profileImageUrl = profileImageUrl; }
+    public void updateProfileImage(String newProfileImageUrl) { this.profileImageUrl = newProfileImageUrl; }
 
     public void updateKakaoToken(String accessToken) {
         this.kakaoAccessToken = accessToken;

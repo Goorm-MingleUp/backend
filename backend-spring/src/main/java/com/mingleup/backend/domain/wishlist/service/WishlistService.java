@@ -51,7 +51,7 @@ public class WishlistService {
     }
 
     /**
-     * ✅ 파티 찜 취소
+     * 파티 찜 취소
      */
     public WishlistResponse remove(Long partyId, Long userId) {
         User user = userRepository.findById(userId)

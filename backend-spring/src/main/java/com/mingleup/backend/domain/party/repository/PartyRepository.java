@@ -10,6 +10,8 @@ import org.springframework.stereotype.Repository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+
 @Repository
 public interface PartyRepository extends JpaRepository<Party, Long> {
 
@@ -32,4 +34,7 @@ public interface PartyRepository extends JpaRepository<Party, Long> {
 
     Page<Party> findByHost(User host, Pageable pageable);
     Page<Party> findByHostAndStatus(User host, PartyStatus status, Pageable pageable);
+
+
+
 }

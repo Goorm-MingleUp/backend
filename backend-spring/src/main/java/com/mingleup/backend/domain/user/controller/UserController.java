@@ -271,7 +271,7 @@ public class UserController {
         return ResponseEntity.ok(ApiResult.onSuccess(reviews));
     }
 
-    @Operation(summary = "유저 프로필 이미지 URL 업데이트", tags = "User")
+    @Operation(summary = "유저 프로필 이미지 URL 업데이트", tags = "User", description = "S3에 업로드한 이미지URL(fileUrl)을 전송해주세요.")
     @PatchMapping("/me/profile-image")
     public ResponseEntity<Map<String, Object>> updateProfileImage(
             @RequestAttribute("userId") Long userId,

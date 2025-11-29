@@ -107,7 +107,7 @@ public class PartyController {
         return ApiResult.onSuccess(response);
     }
 
-    @Operation(summary = "파티 썸네일 이미지 URL 업데이트")
+    @Operation(summary = "파티 썸네일 이미지 URL 업데이트" , description = "S3에 저장한 이미지 URL(fileUrl)을 전송해주세요.")
     @PatchMapping("/{partyId}/thumbnail")
     public ApiResult<Void> updatePartyThumbnail(
             @RequestAttribute("userId") Long userId,

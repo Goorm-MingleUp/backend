@@ -1,6 +1,7 @@
 package com.mingleup.backend.domain.wishlist.controller;
 
 import com.mingleup.backend.domain.wishlist.dto.MyWishlistResponse;
+import com.mingleup.backend.domain.wishlist.dto.response.WishlistResponse;
 import com.mingleup.backend.domain.wishlist.service.WishlistService;
 import com.mingleup.backend.global.common.ApiResult;
 import io.swagger.v3.oas.annotations.Operation;
@@ -19,10 +20,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Wishlist", description = "찜(위시리스트) API")
 @RestController
@@ -103,5 +101,23 @@ public class WishlistController {
         Long currentUserId = Long.parseLong(authentication.getName());
         Page<MyWishlistResponse> myWishlists = wishlistService.getMyWishlistedParties(currentUserId, pageable);
         return ResponseEntity.ok(ApiResult.onSuccess(myWishlists));
+    }
+
+    @Operation(summary = "파티 찜하기", description = "지정된 파티를 찜 목록에 추가합니다.")
+    @PostMapping("/{partyId}")
+    public WishlistResponse addWishlist(
+            @PathVariable Long partyId,
+            @RequestAttribute("userId") Long userId
+    ) {
+        return wishlistService.add(partyId, userId);
+    }
+
+    @Operation(summary = "파티 찜 취소", description = "지정된 파티를 찜 목록에서 제거합니다.")
+    @DeleteMapping("/{partyId}")
+    public WishlistResponse removeWishlist(
+            @PathVariable Long partyId,
+            @RequestAttribute("userId") Long userId
+    ) {
+        return wishlistService.remove(partyId, userId);
     }
 }

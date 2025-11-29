@@ -1,10 +1,8 @@
 package com.mingleup.backend.domain.application.service;
 
+import com.mingleup.backend.domain.application.domain.ApplicationStatus;
 import com.mingleup.backend.domain.application.domain.PartyApplication;
-import com.mingleup.backend.domain.application.dto.MyApplicationResponse;
-import com.mingleup.backend.domain.application.dto.PartyApplicationCancelResponse;
-import com.mingleup.backend.domain.application.dto.PartyApplicationRequest;
-import com.mingleup.backend.domain.application.dto.PartyApplicationResponse;
+import com.mingleup.backend.domain.application.dto.*;
 import com.mingleup.backend.domain.application.repository.PartyApplicationRepository;
 import com.mingleup.backend.domain.party.domain.Party;
 import com.mingleup.backend.domain.party.domain.PartyStatus;
@@ -18,6 +16,11 @@ import org.springframework.data.domain.Page; // [추가]
 import org.springframework.data.domain.Pageable; // [추가]
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.text.Collator;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -99,4 +102,23 @@ public class PartyApplicationService {
                 "CANCELLED"
         );
     }
+
+    @Transactional(readOnly = true)
+    public PartyAttendeesResponse getPartyAttendees(Long partyId) {
+
+        Party party = partyRepository.findById(partyId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PARTY_NOT_FOUND));
+
+        // 파티 신청 내역에서 ‘승인된’ 참석자 조회
+        List<User> attendees = party.getApplications().stream()
+                .filter(app -> app.getStatus() == ApplicationStatus.APPROVED)
+                .map(PartyApplication::getUser)
+                .sorted(Comparator.comparing(User::getName, Collator.getInstance(Locale.KOREAN))) // 한글 가나다 정렬
+                .toList();
+
+        return PartyAttendeesResponse.from(partyId, attendees);
+    }
+
+
+
 }
