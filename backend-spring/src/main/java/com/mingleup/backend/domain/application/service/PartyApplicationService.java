@@ -52,7 +52,7 @@ public class PartyApplicationService {
     /**
      * 파티 신청
      */
-    public PartyApplicationResponse apply(Long partyId, Long userId, PartyApplicationRequest req) {
+    public PartyApplicationResponse apply(Long userId, Long partyId, PartyApplicationRequest req) {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));

@@ -115,6 +115,8 @@ public class PartyApplicationController {
         return ResponseEntity.ok(ApiResult.onSuccess(myApplications));
     }
 
+    // (TODO: 모임 신청(POST), 신청 취소(DELETE), 신청 승인/거절(PATCH) 등 API 추가)
+
     @Operation(
             summary = "파티 신청",
             description = """
