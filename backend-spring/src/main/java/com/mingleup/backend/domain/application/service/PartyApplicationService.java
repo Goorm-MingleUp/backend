@@ -111,14 +111,12 @@ public class PartyApplicationService {
 
         // 파티 신청 내역에서 ‘승인된’ 참석자 조회
         List<User> attendees = party.getApplications().stream()
-                .filter(app -> app.getStatus() == ApplicationStatus.APPROVED)
+                .filter(app -> app.getStatus() == ApplicationStatus.ATTENDED)
                 .map(PartyApplication::getUser)
                 .sorted(Comparator.comparing(User::getName, Collator.getInstance(Locale.KOREAN))) // 한글 가나다 정렬
                 .toList();
 
         return PartyAttendeesResponse.from(partyId, attendees);
     }
-
-
 
 }
