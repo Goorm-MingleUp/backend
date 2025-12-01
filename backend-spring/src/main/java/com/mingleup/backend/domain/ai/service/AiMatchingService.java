@@ -98,6 +98,18 @@ public class AiMatchingService {
     }
 
     private void performMatchingLogic(Party party, List<PartyApplication> applicants) {
+
+        // [추가] 안전장치 1: 최대 인원 제한
+        // 한 번에 너무 많은 인원을 보내면 토큰 비용이 급증하고 GPT 응답이 잘릴 수 있습니다.
+        if (applicants.size() > 30) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "AI 매칭은 최대 30명까지만 가능합니다.");
+        }
+
+        // [추가] 안전장치 2: 최소 인원 제한
+        if (applicants.size() < 4) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "AI 매칭을 위해서는 최소 4명의 참가자가 필요합니다.");
+        }
+
         // 신청자들의 User 정보만 추출하여 리스트로 변환 (수정 가능한 리스트)
         List<User> remainingUsers = applicants.stream()
                 .map(PartyApplication::getUser)
