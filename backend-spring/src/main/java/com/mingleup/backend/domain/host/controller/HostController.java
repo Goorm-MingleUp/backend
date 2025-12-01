@@ -26,7 +26,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import com.mingleup.backend.global.common.PageResponse; // [추가]
 
 import java.util.List;
 

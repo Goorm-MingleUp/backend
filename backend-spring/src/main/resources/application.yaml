@@ -58,4 +58,7 @@ kakao:
 
 app:
   frontend-base-url: ${FRONTEND_BASE_URL}
-
+openai:
+  api-key: ${GPT-4o-mini-key}
+  model: "gpt-4o-mini"
+  api-url: "https://api.openai.com/v1/chat/completions"
