@@ -32,34 +32,32 @@ public class GptService {
     @Value("${openai.api-key}")
     private String apiKey;
 
-    // [추가] 기본값 gpt-4o-mini로 설정 (가성비 모델)
     @Value("${openai.model:gpt-4o-mini}")
     private String model;
 
-    @Value("${openai.api-url:[https://api.openai.com/v1/chat/completions](https://api.openai.com/v1/chat/completions)}")
+    @Value("${openai.api-url:https://api.openai.com/v1/chat/completions}")
     private String apiUrl;
 
     public GptMatchingResult getMatchingResult(List<User> users) {
         String usersJson = convertUsersToJsonString(users);
 
-        // 시스템 프롬프트: JSON Mode를 쓰려면 반드시 프롬프트에 'JSON'이라는 단어가 포함되어야 함
+        // [중요] 프롬프트: 사유를 구체적으로 작성하도록 지시
         String systemPrompt = """
-                You are an expert party planner and AI matching specialist.
-                Based on the list of participants provided, you need to organize them into optimal groups.
+                당신은 전문 파티 플래너이자 AI 매칭 전문가입니다.
+                주어진 참가자 목록을 바탕으로 최적의 그룹(조)을 편성해야 합니다.
                 
-                [Rules]
-                1. Each group should have 3 to 5 members (ideally 4).
-                2. Consider MBTI, age (birthdate), hobbies, and gender to group people with good chemistry.
-                3. Provide a specific 'reason' for matching for each group in Korean (e.g., "모두 E 성향이며 활동적인 취미를 공유합니다.").
-                4. Create a creative and fun 'groupName' in Korean.
-                5. **You must output valid JSON only.** Do not include markdown formatting like ```json.
+                [규칙]
+                1. 한 그룹당 인원은 3~5명 사이로 맞춰주세요. (가능하면 4명 권장)
+                2. MBTI, 나이(생년월일), 취미, 성별을 종합적으로 고려하여 케미가 잘 맞을 것 같은 사람들끼리 묶어주세요.
+                3. 각 그룹별로 '매칭된 구체적인 사유'를 한국어로 작성해주세요. (예: "구성원 모두 E(외향형) 성향이며, '맛집 탐방'이라는 공통 관심사가 있어 즐거운 대화가 예상됩니다.")
+                4. 그룹 이름은 창의적이고 재미있게 지어주세요.
+                5. 반드시 아래 JSON 형식으로만 응답해주세요.
                 
-                [Output Format]
                 {
                   "groups": [
                     {
-                      "groupName": "Group Name",
-                      "reason": "Matching Reason",
+                      "groupName": "그룹 이름",
+                      "reason": "매칭 사유",
                       "userIds": [1, 2, 3, 4]
                     }
                   ]
@@ -68,15 +66,14 @@ public class GptService {
 
         List<GptRequest.Message> messages = new ArrayList<>();
         messages.add(GptRequest.Message.builder().role("system").content(systemPrompt).build());
-        messages.add(GptRequest.Message.builder().role("user").content("Participant List: " + usersJson).build());
+        messages.add(GptRequest.Message.builder().role("user").content("참가자 목록: " + usersJson).build());
 
-        // [수정] JSON 모드 활성화 요청 객체 생성
         GptRequest request = GptRequest.builder()
                 .model(model)
                 .messages(messages)
                 .temperature(0.7)
                 .response_format(GptRequest.ResponseFormat.builder().type("json_object").build())
-                .max_tokens(3000) // [추가] 답변 길이가 3000 토큰을 넘지 못하게 강제 (비용 보호)
+                .max_tokens(3000)
                 .build();
 
         try {
@@ -94,13 +91,11 @@ public class GptService {
             }
 
             String content = response.getChoices().get(0).getMessage().getContent();
-
-            // JSON 모드를 썼으므로 마크다운 제거 로직이 거의 필요 없지만, 혹시 모르니 trim 처리
             return objectMapper.readValue(content.trim(), GptMatchingResult.class);
 
         } catch (Exception e) {
             log.error("GPT API 호출 중 에러 발생: ", e);
-            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR, "AI 매칭 서비스 연결 실패: " + e.getMessage());
+            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR, "AI 매칭 서비스 연결 실패");
         }
     }
 
@@ -113,7 +108,8 @@ public class GptService {
             map.put("gender", user.getGender());
             map.put("mbti", user.getMbti());
             map.put("hobbies", user.getHobbies());
-            map.put("birthdate", user.getBirthdate() != null ? user.getBirthdate().toString() : "Unknown");
+            // 나이 계산을 위해 생년월일 전달
+            map.put("birthdate", user.getBirthdate() != null ? user.getBirthdate().toString() : "정보없음");
             userMaps.add(map);
         }
         try {
