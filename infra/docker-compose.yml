@@ -39,6 +39,8 @@ services:
       KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET}
       BASE_URL: ${BASE_URL}
       FRONTEND_BASE_URL: ${FRONTEND_BASE_URL}
+      OPENAI_API_KEY: ${GPT_4o_mini_key}
+      
     ports:
       - "8080:8080"
     networks:
